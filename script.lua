@@ -442,7 +442,7 @@ task.spawn(function()
                                 if cp then
                                     local det = cp:FindFirstChildOfClass("ClickDetector")
                                     if det then
-                                        task.wait(0.45)
+                                        task.wait(0.25)
                                         pcall(function() fireclickdetector(det) end)
                                         stats.fruit = stats.fruit+1
                                     end
