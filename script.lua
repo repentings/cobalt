@@ -1,233 +1,205 @@
 --[[
    ██████╗ ██████╗ ██████╗  █████╗ ██╗  ████████╗
   ██╔════╝██╔═══██╗██╔══██╗██╔══██╗██║  ╚══██╔══╝
-  ██║     ██║   ██║██████╔╝███████║██║     ██║   
-  ██║     ██║   ██║██╔══██╗██╔══██║██║     ██║   
-  ╚██████╗╚██████╔╝██████╔╝██║  ██║███████╗██║   
-   ╚═════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  
-  Sell Lemons Autofarm  •  v2.0  •  cobalt edition
+  ██║     ██║   ██║██████╔╝███████║██║     ██║
+  ██║     ██║   ██║██╔══██╗██╔══██║██║     ██║
+  ╚██████╗╚██████╔╝██████╔╝██║  ██║███████╗██║
+   ╚═════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝
+  Sell Lemons  •  v3.0  •  cobalt
 --]]
 
--- ─────────────────────────────────────────────────────────
---  COBALT THEME (native ScreenGui – no external library)
--- ─────────────────────────────────────────────────────────
-local C = {
-    bg          = Color3.fromRGB(10,  14,  28),
-    panel       = Color3.fromRGB(16,  22,  44),
-    card        = Color3.fromRGB(22,  32,  60),
-    border      = Color3.fromRGB(40,  62, 120),
-    accent      = Color3.fromRGB(64, 140, 255),
-    accentDim   = Color3.fromRGB(30,  70, 160),
-    accentGlow  = Color3.fromRGB(100,170,255),
-    green       = Color3.fromRGB( 72, 230, 140),
-    red         = Color3.fromRGB(255,  80,  80),
-    textPrimary = Color3.fromRGB(220, 230, 255),
-    textMuted   = Color3.fromRGB(110, 130, 180),
-    textData    = Color3.fromRGB(160, 200, 255),
-    white       = Color3.fromRGB(255, 255, 255),
-}
+-- ═══════════════════════════════════════════════
+--  SERVICES
+-- ═══════════════════════════════════════════════
+local Players    = game:GetService("Players")
+local UIS        = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenSvc   = game:GetService("TweenService")
+local LP         = Players.LocalPlayer
 
--- ─────────────────────────────────────────────────────────
---  SERVICES & PLAYER
--- ─────────────────────────────────────────────────────────
-local Players     = game:GetService("Players")
-local UIS         = game:GetService("UserInputService")
-local RunService  = game:GetService("RunService")
-local TweenSvc    = game:GetService("TweenService")
-local LocalPlayer = Players.LocalPlayer
+-- ═══════════════════════════════════════════════
+--  THEME
+-- ═══════════════════════════════════════════════
+local BG      = Color3.fromRGB(9,  13, 25)
+local PANEL   = Color3.fromRGB(14, 20, 38)
+local CARD    = Color3.fromRGB(20, 28, 52)
+local BORDER  = Color3.fromRGB(38, 58, 110)
+local ACCENT  = Color3.fromRGB(58, 130, 255)
+local ADIM    = Color3.fromRGB(24, 58, 140)
+local AGLOW   = Color3.fromRGB(100,168,255)
+local GREEN   = Color3.fromRGB(60, 220, 130)
+local MUTED   = Color3.fromRGB(90, 115, 170)
+local TEXT    = Color3.fromRGB(215, 225, 255)
+local WHITE   = Color3.fromRGB(255, 255, 255)
 
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
+--  HELPERS
+-- ═══════════════════════════════════════════════
+local function rnd(p, r)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, r or 6)
+    c.Parent = p
+end
+
+local function brdr(p, col, t)
+    local s = Instance.new("UIStroke")
+    s.Color = col or BORDER
+    s.Thickness = t or 1
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = p
+end
+
+local function tween(obj, props, dur, style)
+    TweenSvc:Create(obj, TweenInfo.new(dur or 0.18, style or Enum.EasingStyle.Quad), props):Play()
+end
+
+-- ═══════════════════════════════════════════════
+--  NOTIFICATION
+-- ═══════════════════════════════════════════════
+local notifY = 16
+local function notify(title, body, dur)
+    local pg = LP:FindFirstChildOfClass("PlayerGui")
+    if not pg then return end
+    local g = Instance.new("ScreenGui")
+    g.Name = "CobaltNotif"
+    g.ResetOnSpawn = false
+    g.IgnoreGuiInset = true
+    g.DisplayOrder = 10002
+    g.Parent = pg
+
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(0, 270, 0, 58)
+    f.Position = UDim2.new(1, 20, 0, notifY)
+    f.BackgroundColor3 = PANEL
+    f.BorderSizePixel = 0
+    f.Parent = g
+    rnd(f, 8) brdr(f, ACCENT, 1)
+
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(0, 3, 1, -14)
+    bar.Position = UDim2.new(0, 7, 0, 7)
+    bar.BackgroundColor3 = ACCENT
+    bar.BorderSizePixel = 0
+    bar.Parent = f
+    rnd(bar, 2)
+
+    local tl = Instance.new("TextLabel")
+    tl.Size = UDim2.new(1,-20,0,18)
+    tl.Position = UDim2.new(0,18,0,8)
+    tl.BackgroundTransparency = 1
+    tl.Text = title
+    tl.TextSize = 12
+    tl.Font = Enum.Font.GothamBold
+    tl.TextColor3 = AGLOW
+    tl.TextXAlignment = Enum.TextXAlignment.Left
+    tl.Parent = f
+
+    local bl = Instance.new("TextLabel")
+    bl.Size = UDim2.new(1,-20,0,16)
+    bl.Position = UDim2.new(0,18,0,28)
+    bl.BackgroundTransparency = 1
+    bl.Text = body
+    bl.TextSize = 11
+    bl.Font = Enum.Font.Gotham
+    bl.TextColor3 = MUTED
+    bl.TextXAlignment = Enum.TextXAlignment.Left
+    bl.Parent = f
+
+    tween(f, {Position = UDim2.new(1,-286,0,notifY)}, 0.3, Enum.EasingStyle.Quint)
+    task.delay(dur or 4, function()
+        tween(f, {Position = UDim2.new(1,20,0,notifY)}, 0.3, Enum.EasingStyle.Quint)
+        task.wait(0.35)
+        g:Destroy()
+    end)
+end
+
+-- ═══════════════════════════════════════════════
 --  FIND TYCOON
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 local userTycoon = (function()
     for _, v in pairs(workspace:GetChildren()) do
         if v:IsA("Folder") and v.Name:match("Tycoon%d") then
-            if v:FindFirstChild("Owner") and v.Owner.Value == LocalPlayer then
+            if v:FindFirstChild("Owner") and v.Owner.Value == LP then
                 return v
             end
         end
     end
 end)()
 
--- ─────────────────────────────────────────────────────────
---  GUI BUILDER HELPERS
--- ─────────────────────────────────────────────────────────
-local function corner(parent, r)
-    local c2 = Instance.new("UICorner")
-    c2.CornerRadius = UDim.new(0, r or 6)
-    c2.Parent = parent
-end
-
-local function stroke(parent, color, thickness)
-    local s = Instance.new("UIStroke")
-    s.Color = color or C.border
-    s.Thickness = thickness or 1
-    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    s.Parent = parent
-end
-
-local function label(parent, text, size, color, font, xalign, yalign)
-    local l = Instance.new("TextLabel")
-    l.Size = UDim2.new(1, 0, 1, 0)
-    l.BackgroundTransparency = 1
-    l.Text = text
-    l.TextSize = size or 13
-    l.TextColor3 = color or C.textPrimary
-    l.Font = font or Enum.Font.GothamMedium
-    l.TextXAlignment = xalign or Enum.TextXAlignment.Left
-    l.TextYAlignment = yalign or Enum.TextYAlignment.Center
-    l.Parent = parent
-    return l
-end
-
-local function notify(title, body, duration)
-    local parent = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-    if not parent then return end
-
-    local g = Instance.new("ScreenGui")
-    g.Name = "CobaltNotif"
-    g.ResetOnSpawn = false
-    g.IgnoreGuiInset = true
-    g.DisplayOrder = 10001
-    g.Parent = parent
-
-    local f = Instance.new("Frame")
-    f.Size = UDim2.new(0, 280, 0, 64)
-    f.Position = UDim2.new(1, -296, 0, 16)
-    f.BackgroundColor3 = C.panel
-    f.BorderSizePixel = 0
-    f.Parent = g
-    corner(f, 8)
-    stroke(f, C.accent, 1)
-
-    -- left accent bar
-    local bar = Instance.new("Frame")
-    bar.Size = UDim2.new(0, 3, 1, -12)
-    bar.Position = UDim2.new(0, 6, 0, 6)
-    bar.BackgroundColor3 = C.accent
-    bar.BorderSizePixel = 0
-    bar.Parent = f
-    corner(bar, 2)
-
-    local t = Instance.new("TextLabel")
-    t.Size = UDim2.new(1, -24, 0, 20)
-    t.Position = UDim2.new(0, 18, 0, 8)
-    t.BackgroundTransparency = 1
-    t.Text = title
-    t.TextSize = 13
-    t.Font = Enum.Font.GothamBold
-    t.TextColor3 = C.accentGlow
-    t.TextXAlignment = Enum.TextXAlignment.Left
-    t.Parent = f
-
-    local b = Instance.new("TextLabel")
-    b.Size = UDim2.new(1, -24, 0, 20)
-    b.Position = UDim2.new(0, 18, 0, 30)
-    b.BackgroundTransparency = 1
-    b.Text = body
-    b.TextSize = 12
-    b.Font = Enum.Font.Gotham
-    b.TextColor3 = C.textMuted
-    b.TextXAlignment = Enum.TextXAlignment.Left
-    b.Parent = f
-
-    -- slide in
-    f.Position = UDim2.new(1, 20, 0, 16)
-    TweenSvc:Create(f, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-        Position = UDim2.new(1, -296, 0, 16)
-    }):Play()
-
-    task.delay(duration or 4, function()
-        TweenSvc:Create(f, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-            Position = UDim2.new(1, 20, 0, 16)
-        }):Play()
-        task.wait(0.35)
-        g:Destroy()
-    end)
-end
-
--- ─────────────────────────────────────────────────────────
---  TYCOON GUARD
--- ─────────────────────────────────────────────────────────
 if not userTycoon then
-    notify("Cobalt — Error", "Tycoon not found! Join a tycoon first.", 8)
+    notify("Cobalt — Error", "No tycoon found. Claim one first.", 8)
     return
 end
 
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 --  STATE
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 local AutoBuy        = false
 local AutoUpgrade    = false
 local AutoFruit      = false
 local AutoRebirth    = false
 local AutoEvolve     = false
 local AutoPowerLevel = false
+local FlyEnabled     = false
+local NoclipEnabled  = false
+local SpeedEnabled   = false
+local InfJumpEnabled = false
 
 local stats = { buys=0, upgrades=0, fruit=0, rebirths=0, evolves=0 }
 
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 --  AUTO BUY
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 local function buyAllAffordable()
-    for _, obj in ipairs(userTycoon.Purchases:GetDescendants()) do
+    local purchases = userTycoon:FindFirstChild("Purchases")
+    if not purchases then return end
+    for _, obj in ipairs(purchases:GetDescendants()) do
         if obj:IsA("Model") then
-            local shown     = obj:GetAttribute("Shown")
-            local purchased = obj:GetAttribute("Purchased")
-            if shown == true and purchased ~= true then
-                local purchase = obj:FindFirstChild("Purchase")
-                if purchase and purchase:IsA("RemoteFunction") then
-                    pcall(function() purchase:InvokeServer() end)
+            if obj:GetAttribute("Shown") == true and obj:GetAttribute("Purchased") ~= true then
+                local rem = obj:FindFirstChild("Purchase")
+                if rem and rem:IsA("RemoteFunction") then
+                    pcall(function() rem:InvokeServer() end)
                     stats.buys = stats.buys + 1
                 end
             end
         end
     end
 end
-
 task.spawn(function()
-    while true do
-        task.wait(0.05)
+    while true do task.wait(0.05)
         if AutoBuy then pcall(buyAllAffordable) end
     end
 end)
 
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 --  AUTO UPGRADE
--- ─────────────────────────────────────────────────────────
-local upgradeRemotes  = {}
-local upgradeLevel    = {}
-local lastUpgradeScan = 0
-
-local function refreshUpgradeRemotes()
-    upgradeRemotes = {}
-    upgradeLevel   = {}
-    local purchases = userTycoon:FindFirstChild("Purchases")
-    if not purchases then return end
-    for _, obj in ipairs(purchases:GetDescendants()) do
+-- ═══════════════════════════════════════════════
+local upgradeRemotes = {}
+local upgradeLevel   = {}
+local lastScan       = 0
+local function refreshUpgrades()
+    upgradeRemotes = {} upgradeLevel = {}
+    local p = userTycoon:FindFirstChild("Purchases")
+    if not p then return end
+    for _, obj in ipairs(p:GetDescendants()) do
         if obj:IsA("RemoteFunction") and obj.Name == "Upgrade" then
-            upgradeRemotes[#upgradeRemotes + 1] = obj
+            upgradeRemotes[#upgradeRemotes+1] = obj
         end
     end
 end
-
 task.spawn(function()
-    while true do
-        task.wait(0.25)
+    while true do task.wait(0.25)
         if AutoUpgrade then
-            if tick() - lastUpgradeScan > 3 then
-                refreshUpgradeRemotes()
-                lastUpgradeScan = tick()
-            end
-            for _, remote in ipairs(upgradeRemotes) do
-                if remote.Parent then
-                    local lvl = (upgradeLevel[remote] or 0) + 1
+            if tick()-lastScan > 3 then refreshUpgrades() lastScan=tick() end
+            for _, rem in ipairs(upgradeRemotes) do
+                if rem.Parent then
+                    local lvl = (upgradeLevel[rem] or 0)+1
                     while lvl <= 100 do
-                        local ok, res = pcall(function() return remote:InvokeServer(lvl) end)
+                        local ok,res = pcall(function() return rem:InvokeServer(lvl) end)
                         if (not ok) or res == false then break end
-                        upgradeLevel[remote] = lvl
-                        stats.upgrades = stats.upgrades + 1
-                        lvl = lvl + 1
+                        upgradeLevel[rem] = lvl
+                        stats.upgrades = stats.upgrades+1
+                        lvl = lvl+1
                     end
                 end
             end
@@ -235,896 +207,1028 @@ task.spawn(function()
     end
 end)
 
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 --  AUTO POWER LEVEL
--- ─────────────────────────────────────────────────────────
-local function getPowerLevelRemote()
-    local remotes = userTycoon:FindFirstChild("Remotes")
-    return remotes and remotes:FindFirstChild("UpgradePowerLevel")
+-- ═══════════════════════════════════════════════
+local function getPLRemote()
+    local r = userTycoon:FindFirstChild("Remotes")
+    return r and r:FindFirstChild("UpgradePowerLevel")
 end
-
 task.spawn(function()
-    while true do
-        task.wait(0.25)
+    while true do task.wait(0.25)
         if AutoPowerLevel then
-            local remote = getPowerLevelRemote()
-            if remote then pcall(function() remote:InvokeServer() end) end
+            local rem = getPLRemote()
+            if rem then pcall(function() rem:InvokeServer() end) end
         end
     end
 end)
 
--- ─────────────────────────────────────────────────────────
---  AUTO REBIRTH
--- ─────────────────────────────────────────────────────────
-local RebirthGainMultiple = 1.0
-local MinPotential        = 1
-local RebirthCooldown     = 2
-local RebirthTimeout      = 8
-local rebirthBusy         = false
-
+-- ═══════════════════════════════════════════════
+--  REBIRTH
+-- ═══════════════════════════════════════════════
 local NUM_SCALE = {
-    thousand=1e3, million=1e6, billion=1e9, trillion=1e12, quadrillion=1e15,
-    quintillion=1e18, sextillion=1e21, septillion=1e24, octillion=1e27,
-    nonillion=1e30, decillion=1e33, undecillion=1e36, duodecillion=1e39,
-    tredecillion=1e42, quattuordecillion=1e45, quindecillion=1e48,
-    sexdecillion=1e51, septendecillion=1e54, octodecillion=1e57,
-    novemdecillion=1e60, vigintillion=1e63,
-    k=1e3, m=1e6, b=1e9, t=1e12, qd=1e15, qn=1e18, sx=1e21, sp=1e24,
+    thousand=1e3,million=1e6,billion=1e9,trillion=1e12,quadrillion=1e15,
+    quintillion=1e18,sextillion=1e21,septillion=1e24,
+    k=1e3,m=1e6,b=1e9,t=1e12,qd=1e15,qn=1e18,sx=1e21,sp=1e24,
 }
-local function parseNumber(s)
+local function parseNum(s)
     if not s then return nil end
     s = tostring(s):gsub(",",""):lower()
-    local num = s:match("[%d%.]+")
-    local val = num and tonumber(num)
-    if not val then return nil end
-    local word = s:match("[%d%.%s]+([a-z]+)")
-    if word and NUM_SCALE[word] then val = val * NUM_SCALE[word] end
-    return val
+    local n = s:match("[%d%.]+")
+    local v = n and tonumber(n)
+    if not v then return nil end
+    local w = s:match("[%d%.%s]+([a-z]+)")
+    if w and NUM_SCALE[w] then v = v*NUM_SCALE[w] end
+    return v
 end
-
+local function getRebirthRemote()
+    local r = userTycoon:FindFirstChild("Remotes")
+    return r and r:FindFirstChild("Rebirth")
+end
+local function getRebirthedSignal()
+    local r = userTycoon:FindFirstChild("Remotes")
+    return r and r:FindFirstChild("Rebirthed")
+end
 local function investorBody()
-    local pg = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    local pg = LP:FindFirstChildOfClass("PlayerGui")
     local r  = pg and pg:FindFirstChild("Rebirth")
     local im = r and r:FindFirstChild("InvestorsMenu")
     return im and im:FindFirstChild("Body")
 end
-local function readQuantity(frameName)
-    local body  = investorBody()
-    local frame = body and body:FindFirstChild(frameName)
-    local q     = frame and frame:FindFirstChild("Quantity")
-    return q and parseNumber(q.Text)
+local function readQty(name)
+    local b = investorBody()
+    local f = b and b:FindFirstChild(name)
+    local q = f and f:FindFirstChild("Quantity")
+    return q and parseNum(q.Text)
 end
-local function getCurrentInvestors()   return readQuantity("Amount")  or 0 end
-local function getPotentialInvestors() return readQuantity("Potential")     end
-
-local function getRebirthRemote()
-    local remotes = userTycoon:FindFirstChild("Remotes")
-    return remotes and remotes:FindFirstChild("Rebirth")
-end
-local function getRebirthedSignal()
-    local remotes = userTycoon:FindFirstChild("Remotes")
-    return remotes and remotes:FindFirstChild("Rebirthed")
-end
-
+local rebirthBusy = false
 task.spawn(function()
-    while true do
-        task.wait(0.5)
+    while true do task.wait(0.5)
         if AutoRebirth and not rebirthBusy then
-            local remote    = getRebirthRemote()
-            local potential = getPotentialInvestors()
-            local current   = getCurrentInvestors()
-            local worthIt   = remote and potential
-                and potential >= MinPotential
-                and potential >= current * RebirthGainMultiple
-            if worthIt then
+            local rem = getRebirthRemote()
+            local pot = readQty("Potential")
+            local cur = readQty("Amount") or 0
+            if rem and pot and pot >= 1 and pot >= cur*1.0 then
                 rebirthBusy = true
                 pcall(function()
-                    local done   = false
-                    local signal = getRebirthedSignal()
+                    local done=false
+                    local sig = getRebirthedSignal()
                     local conn
-                    if signal and signal:IsA("RemoteEvent") then
-                        conn = signal.OnClientEvent:Connect(function() done = true end)
+                    if sig and sig:IsA("RemoteEvent") then
+                        conn = sig.OnClientEvent:Connect(function() done=true end)
                     end
-                    remote:InvokeServer()
-                    stats.rebirths = stats.rebirths + 1
-                    local t = 0
-                    while not done and t < RebirthTimeout do task.wait(0.1); t = t+0.1 end
+                    rem:InvokeServer()
+                    stats.rebirths = stats.rebirths+1
+                    local t=0
+                    while not done and t<8 do task.wait(0.1) t=t+0.1 end
                     if conn then conn:Disconnect() end
                 end)
-                task.wait(RebirthCooldown)
+                task.wait(2)
                 rebirthBusy = false
             end
         end
     end
 end)
 
--- ─────────────────────────────────────────────────────────
---  AUTO EVOLVE
--- ─────────────────────────────────────────────────────────
-local EvolveAt       = 100
-local EvolveCooldown = 2
-local EvolveTimeout  = 8
-local evolveBusy     = false
-
+-- ═══════════════════════════════════════════════
+--  EVOLVE
+-- ═══════════════════════════════════════════════
 local function getEvolveRemote()
-    local remotes = userTycoon:FindFirstChild("Remotes")
-    return remotes and remotes:FindFirstChild("Evolve")
+    local r = userTycoon:FindFirstChild("Remotes")
+    return r and r:FindFirstChild("Evolve")
 end
 local function getEvolvedSignal()
-    local remotes = userTycoon:FindFirstChild("Remotes")
-    return remotes and remotes:FindFirstChild("Evolved")
+    local r = userTycoon:FindFirstChild("Remotes")
+    return r and r:FindFirstChild("Evolved")
 end
 local function getEvolveProgress()
-    local pg   = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-    local r    = pg and pg:FindFirstChild("Rebirth")
-    local em   = r and r:FindFirstChild("EvolutionMenu")
-    local body = em and em:FindFirstChild("Body")
-    local p    = body and body:FindFirstChild("Progress")
+    local pg = LP:FindFirstChildOfClass("PlayerGui")
+    local r  = pg and pg:FindFirstChild("Rebirth")
+    local em = r and r:FindFirstChild("EvolutionMenu")
+    local b  = em and em:FindFirstChild("Body")
+    local p  = b and b:FindFirstChild("Progress")
     if not p then return nil end
     return tonumber(tostring(p.Text):match("[%d%.]+"))
 end
-
+local evolveBusy = false
 task.spawn(function()
-    while true do
-        task.wait(0.5)
+    while true do task.wait(0.5)
         if AutoEvolve and not evolveBusy then
-            local remote   = getEvolveRemote()
-            local progress = getEvolveProgress()
-            if remote and progress and progress >= EvolveAt then
+            local rem  = getEvolveRemote()
+            local prog = getEvolveProgress()
+            if rem and prog and prog >= 100 then
                 evolveBusy = true
                 pcall(function()
-                    local done   = false
-                    local signal = getEvolvedSignal()
+                    local done=false
+                    local sig = getEvolvedSignal()
                     local conn
-                    if signal and signal:IsA("RemoteEvent") then
-                        conn = signal.OnClientEvent:Connect(function() done = true end)
+                    if sig and sig:IsA("RemoteEvent") then
+                        conn = sig.OnClientEvent:Connect(function() done=true end)
                     end
-                    remote:InvokeServer()
-                    stats.evolves = stats.evolves + 1
-                    local t = 0
-                    while not done and t < EvolveTimeout do task.wait(0.1); t = t+0.1 end
+                    rem:InvokeServer()
+                    stats.evolves = stats.evolves+1
+                    local t=0
+                    while not done and t<8 do task.wait(0.1) t=t+0.1 end
                     if conn then conn:Disconnect() end
                 end)
-                task.wait(EvolveCooldown)
+                task.wait(2)
                 evolveBusy = false
             end
         end
     end
 end)
 
--- ─────────────────────────────────────────────────────────
---  SEWER ACTIONS
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
+--  SEWER
+-- ═══════════════════════════════════════════════
 local function touchPart(hrp, part)
-    pcall(function()
-        firetouchinterest(hrp, part, 0)
-        firetouchinterest(hrp, part, 1)
-    end)
+    pcall(function() firetouchinterest(hrp,part,0) firetouchinterest(hrp,part,1) end)
 end
-
 local function pullAllLevers()
-    local char = LocalPlayer.Character
+    local char = LP.Character
     local hrp  = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return 0 end
-    local map   = workspace:FindFirstChild("Map")
-    local sewer = map and map:FindFirstChild("Sewer")
+    local sewer = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Sewer")
     local root  = sewer or workspace
-    local pulled = 0
+    local n = 0
     for _, o in ipairs(root:GetDescendants()) do
-        if o:IsA("BasePart") and string.find(string.lower(o.Name), "lever", 1, true) then
-            pcall(function()
-                firetouchinterest(hrp, o, 0)
-                firetouchinterest(hrp, o, 1)
-            end)
-            pulled = pulled + 1
+        if o:IsA("BasePart") and string.find(string.lower(o.Name),"lever",1,true) then
+            pcall(function() firetouchinterest(hrp,o,0) firetouchinterest(hrp,o,1) end)
+            n = n+1
         end
     end
     if sewer then
         for _, o in ipairs(sewer:GetDescendants()) do
             if o:IsA("BasePart") and (o.Name=="VineKey" or o.Name=="UFOKey") then
-                pcall(function()
-                    firetouchinterest(hrp, o, 0)
-                    firetouchinterest(hrp, o, 1)
-                end)
+                pcall(function() firetouchinterest(hrp,o,0) firetouchinterest(hrp,o,1) end)
             end
         end
     end
-    return pulled
+    return n
 end
-
 local function doSewerRun()
-    local char = LocalPlayer.Character
+    local char = LP.Character
     local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false, "no character" end
-    local map   = workspace:FindFirstChild("Map")
-    local sewer = map and map:FindFirstChild("Sewer")
-    if not sewer then return false, "sewer not loaded" end
+    if not hrp then return false,"no character" end
+    local sewer = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Sewer")
+    if not sewer then return false,"sewer not loaded" end
     for _, o in ipairs(sewer:GetDescendants()) do
-        if o:IsA("BasePart") and string.find(string.lower(o.Name), "lever", 1, true) then
-            touchPart(hrp, o)
-        end
+        if o:IsA("BasePart") and string.find(string.lower(o.Name),"lever",1,true) then touchPart(hrp,o) end
     end
-    for _, folderName in ipairs({"CashVine","SewerAlien"}) do
-        local folder = sewer:FindFirstChild(folderName)
-        if folder then
-            for _, o in ipairs(folder:GetDescendants()) do
-                if o:IsA("BasePart") and (o.Name=="VineKey" or o.Name=="UFOKey") then
-                    touchPart(hrp, o)
-                end
+    for _, fn in ipairs({"CashVine","SewerAlien"}) do
+        local f = sewer:FindFirstChild(fn)
+        if f then
+            for _, o in ipairs(f:GetDescendants()) do
+                if o:IsA("BasePart") and (o.Name=="VineKey" or o.Name=="UFOKey") then touchPart(hrp,o) end
             end
         end
     end
     task.wait(0.3)
-    local cashVine = sewer:FindFirstChild("CashVine")
-    if cashVine then
-        local vineDoor = cashVine:FindFirstChild("VineDoor")
-        if vineDoor then
-            for _, o in ipairs(vineDoor:GetDescendants()) do
-                if o:IsA("BasePart") then touchPart(hrp, o) end
-            end
-        end
+    local cv = sewer:FindFirstChild("CashVine")
+    if cv then
+        local vd = cv:FindFirstChild("VineDoor")
+        if vd then for _, o in ipairs(vd:GetDescendants()) do if o:IsA("BasePart") then touchPart(hrp,o) end end end
     end
     task.wait(0.3)
-    if cashVine then
-        local vineModel = cashVine:FindFirstChild("CashVine")
-        if vineModel then
-            local pivot = vineModel:GetPivot()
-            pcall(function() hrp.CFrame = pivot + Vector3.new(0,3,0) end)
+    if cv then
+        local vm = cv:FindFirstChild("CashVine")
+        if vm then
+            pcall(function() hrp.CFrame = vm:GetPivot()+Vector3.new(0,3,0) end)
             task.wait(0.2)
-            for _, o in ipairs(vineModel:GetDescendants()) do
-                if o:IsA("BasePart") then touchPart(hrp, o) end
-            end
+            for _, o in ipairs(vm:GetDescendants()) do if o:IsA("BasePart") then touchPart(hrp,o) end end
         end
     end
     return true
 end
-
-local SEWER_ALIEN_POS = Vector3.new(-42, -41, 180)
 local function teleportToAlien()
-    local char = LocalPlayer.Character
+    local char = LP.Character
     local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false, "no character" end
-    pcall(function() hrp.CFrame = CFrame.new(SEWER_ALIEN_POS) end)
+    if not hrp then return false,"no character" end
+    pcall(function() hrp.CFrame = CFrame.new(-42,-41,180) end)
     return true
 end
 
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 --  AUTO FRUIT
--- ─────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════
 local Trees = {}
-local function addTree(obj)
-    if obj:IsA("Model") and obj.Name == "LemonTree" and not table.find(Trees, obj) then
-        table.insert(Trees, obj)
-    end
+local function addTree(o)
+    if o:IsA("Model") and o.Name=="LemonTree" and not table.find(Trees,o) then table.insert(Trees,o) end
 end
-local function removeTree(obj)
-    local i = table.find(Trees, obj)
-    if i then table.remove(Trees, i) end
+local function remTree(o)
+    local i = table.find(Trees,o) if i then table.remove(Trees,i) end
 end
 for _, v in ipairs(workspace:GetDescendants()) do addTree(v) end
 workspace.DescendantAdded:Connect(addTree)
-workspace.DescendantRemoving:Connect(removeTree)
-
-local function collectFruit(tree)
-    for _, obj in ipairs(tree:GetDescendants()) do
-        if obj:IsA("BasePart") then obj.CanCollide = false end
-    end
-    local char = LocalPlayer.Character
-    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    hrp.CFrame = tree:GetPivot() + Vector3.new(0,5,0)
-    for _, obj in ipairs(tree:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name == "Fruit" then
-            obj.CanCollide = false
-            local clickPart = obj:FindFirstChild("ClickPart")
-            if clickPart then
-                local detector = clickPart:FindFirstChildOfClass("ClickDetector")
-                if detector then
-                    task.wait(0.45)
-                    pcall(function() fireclickdetector(detector) end)
-                    stats.fruit = stats.fruit + 1
-                end
-            end
-        end
-    end
-end
-
+workspace.DescendantRemoving:Connect(remTree)
 task.spawn(function()
-    while true do
-        task.wait(0.1)
+    while true do task.wait(0.1)
         if AutoFruit then
             for _, tree in ipairs(Trees) do
                 if not AutoFruit then break end
                 if tree and tree.Parent then
-                    pcall(function() collectFruit(tree) end)
+                    pcall(function()
+                        local char = LP.Character
+                        local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+                        if not hrp then return end
+                        for _, o in ipairs(tree:GetDescendants()) do
+                            if o:IsA("BasePart") then o.CanCollide = false end
+                        end
+                        hrp.CFrame = tree:GetPivot()+Vector3.new(0,5,0)
+                        for _, o in ipairs(tree:GetDescendants()) do
+                            if o:IsA("BasePart") and o.Name=="Fruit" then
+                                o.CanCollide = false
+                                local cp = o:FindFirstChild("ClickPart")
+                                if cp then
+                                    local det = cp:FindFirstChildOfClass("ClickDetector")
+                                    if det then
+                                        task.wait(0.45)
+                                        pcall(function() fireclickdetector(det) end)
+                                        stats.fruit = stats.fruit+1
+                                    end
+                                end
+                            end
+                        end
+                    end)
                 end
             end
         end
     end
 end)
 
--- ─────────────────────────────────────────────────────────
---  BUILD COBALT GUI
--- ─────────────────────────────────────────────────────────
-local guiParent = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+-- ═══════════════════════════════════════════════
+--  MISC: FLY
+-- ═══════════════════════════════════════════════
+local flyConn
+local function startFly()
+    local char = LP.Character or LP.CharacterAdded:Wait()
+    local hrp  = char:FindFirstChild("HumanoidRootPart")
+    local hum  = char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum then return end
+    local bg = Instance.new("BodyGyro")
+    bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
+    bg.D = 100 bg.Parent = hrp
+    local bv = Instance.new("BodyVelocity")
+    bv.Velocity = Vector3.zero
+    bv.MaxForce = Vector3.new(9e9,9e9,9e9)
+    bv.Parent = hrp
+    hum.PlatformStand = true
+    local SPEED = 60
+    flyConn = RunService.RenderStepped:Connect(function()
+        if not FlyEnabled then
+            bg:Destroy() bv:Destroy()
+            hum.PlatformStand = false
+            flyConn:Disconnect()
+            return
+        end
+        local cam = workspace.CurrentCamera
+        local dir = Vector3.zero
+        if UIS:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0,1,0) end
+        bv.Velocity = dir.Magnitude > 0 and dir.Unit*SPEED or Vector3.zero
+        bg.CFrame = cam.CFrame
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+--  MISC: NOCLIP
+-- ═══════════════════════════════════════════════
+local noclipConn
+local function startNoclip()
+    noclipConn = RunService.Stepped:Connect(function()
+        if not NoclipEnabled then noclipConn:Disconnect() return end
+        local char = LP.Character
+        if not char then return end
+        for _, o in ipairs(char:GetDescendants()) do
+            if o:IsA("BasePart") then o.CanCollide = false end
+        end
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+--  MISC: SPEED
+-- ═══════════════════════════════════════════════
+local DEFAULT_SPEED = 16
+local function setSpeed(enabled)
+    local char = LP.Character
+    local hum  = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = enabled and 80 or DEFAULT_SPEED end
+end
+LP.CharacterAdded:Connect(function(char)
+    if SpeedEnabled then
+        local hum = char:WaitForChild("Humanoid")
+        hum.WalkSpeed = 80
+    end
+end)
+
+-- ═══════════════════════════════════════════════
+--  MISC: INF JUMP
+-- ═══════════════════════════════════════════════
+UIS.JumpRequest:Connect(function()
+    if InfJumpEnabled then
+        local char = LP.Character
+        local hum  = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════
+--  BUILD GUI
+-- ═══════════════════════════════════════════════════════════════════
+local guiParent = LP:FindFirstChildOfClass("PlayerGui")
 if not guiParent then
-    local ok, h = pcall(gethui)
-    guiParent = (ok and h) or game:GetService("CoreGui")
+    local ok,h = pcall(gethui) guiParent = (ok and h) or game:GetService("CoreGui")
+end
+for _, n in ipairs({"CobaltGui","CobaltNotif","AutoStatusGui"}) do
+    local old = guiParent:FindFirstChild(n) if old then old:Destroy() end
 end
 
--- cleanup old instances
-for _, n in ipairs({"CobaltGui","AutoStatusGui","CobaltNotif"}) do
-    local old = guiParent:FindFirstChild(n)
-    if old then old:Destroy() end
-end
+local SG = Instance.new("ScreenGui")
+SG.Name = "CobaltGui"
+SG.ResetOnSpawn = false
+SG.IgnoreGuiInset = true
+SG.DisplayOrder = 9999
+SG.Parent = guiParent
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CobaltGui"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.IgnoreGuiInset = true
-ScreenGui.DisplayOrder = 9998
-ScreenGui.Parent = guiParent
+-- ── MAIN FRAME ──
+local W, H = 360, 480
+local Win = Instance.new("Frame")
+Win.Name = "Win"
+Win.Size = UDim2.new(0,W,0,H)
+Win.Position = UDim2.new(0.5,-W/2,0.5,-H/2)
+Win.BackgroundColor3 = BG
+Win.BorderSizePixel = 0
+Win.ClipsDescendants = true
+Win.Parent = SG
+rnd(Win,10) brdr(Win,BORDER,1)
 
--- ── MAIN WINDOW ──────────────────────────────────────────
-local WIN_W, WIN_H = 340, 440
-local Window = Instance.new("Frame")
-Window.Name = "CobaltWindow"
-Window.Size = UDim2.new(0, WIN_W, 0, WIN_H)
-Window.Position = UDim2.new(0.5, -WIN_W/2, 0.5, -WIN_H/2)
-Window.BackgroundColor3 = C.bg
-Window.BorderSizePixel = 0
-Window.Active = true
-Window.Parent = ScreenGui
-corner(Window, 12)
-stroke(Window, C.border, 1)
+-- accent line top
+local accentLine = Instance.new("Frame")
+accentLine.Size = UDim2.new(1,0,0,2)
+accentLine.BackgroundColor3 = ACCENT
+accentLine.BorderSizePixel = 0
+accentLine.ZIndex = 5
+accentLine.Parent = Win
 
--- subtle top gradient glow
-local topGlow = Instance.new("Frame")
-topGlow.Size = UDim2.new(1, 0, 0, 3)
-topGlow.BackgroundColor3 = C.accent
-topGlow.BorderSizePixel = 0
-topGlow.Parent = Window
-local tgCorner = Instance.new("UICorner")
-tgCorner.CornerRadius = UDim.new(0, 12)
-tgCorner.Parent = topGlow
+-- ── TITLE BAR ──
+local TB = Instance.new("Frame")
+TB.Size = UDim2.new(1,0,0,44)
+TB.Position = UDim2.new(0,0,0,2)
+TB.BackgroundColor3 = PANEL
+TB.BorderSizePixel = 0
+TB.Parent = Win
 
--- ── TITLE BAR ────────────────────────────────────────────
-local TitleBar = Instance.new("Frame")
-TitleBar.Size = UDim2.new(1, 0, 0, 48)
-TitleBar.BackgroundColor3 = C.panel
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = Window
-corner(TitleBar, 12)
--- mask bottom corners
-local titleMask = Instance.new("Frame")
-titleMask.Size = UDim2.new(1, 0, 0, 12)
-titleMask.Position = UDim2.new(0,0,1,-12)
-titleMask.BackgroundColor3 = C.panel
-titleMask.BorderSizePixel = 0
-titleMask.Parent = TitleBar
+-- logo pill
+local logoPill = Instance.new("Frame")
+logoPill.Size = UDim2.new(0,8,0,8)
+logoPill.Position = UDim2.new(0,14,0.5,-4)
+logoPill.BackgroundColor3 = ACCENT
+logoPill.BorderSizePixel = 0
+logoPill.Parent = TB
+rnd(logoPill,4)
 
--- logo dot
-local dot = Instance.new("Frame")
-dot.Size = UDim2.new(0, 10, 0, 10)
-dot.Position = UDim2.new(0, 16, 0.5, -5)
-dot.BackgroundColor3 = C.accent
-dot.BorderSizePixel = 0
-dot.Parent = TitleBar
-corner(dot, 5)
+local titleTxt = Instance.new("TextLabel")
+titleTxt.Size = UDim2.new(0,140,1,0)
+titleTxt.Position = UDim2.new(0,30,0,0)
+titleTxt.BackgroundTransparency = 1
+titleTxt.Text = "cobalt"
+titleTxt.TextSize = 16
+titleTxt.Font = Enum.Font.GothamBold
+titleTxt.TextColor3 = TEXT
+titleTxt.TextXAlignment = Enum.TextXAlignment.Left
+titleTxt.Parent = TB
 
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -100, 1, 0)
-titleLabel.Position = UDim2.new(0, 34, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "COBALT"
-titleLabel.TextSize = 18
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextColor3 = C.textPrimary
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = TitleBar
+local subTxt = Instance.new("TextLabel")
+subTxt.Size = UDim2.new(0,160,1,0)
+subTxt.Position = UDim2.new(0,30,0,14)
+subTxt.BackgroundTransparency = 1
+subTxt.Text = "sell lemons"
+subTxt.TextSize = 10
+subTxt.Font = Enum.Font.Gotham
+subTxt.TextColor3 = MUTED
+subTxt.TextXAlignment = Enum.TextXAlignment.Left
+subTxt.Parent = TB
 
-local subtitleLabel = Instance.new("TextLabel")
-subtitleLabel.Size = UDim2.new(1, -100, 0, 14)
-subtitleLabel.Position = UDim2.new(0, 34, 0.5, 4)
-subtitleLabel.BackgroundTransparency = 1
-subtitleLabel.Text = "Sell Lemons Autofarm"
-subtitleLabel.TextSize = 11
-subtitleLabel.Font = Enum.Font.Gotham
-subtitleLabel.TextColor3 = C.textMuted
-subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-subtitleLabel.Parent = TitleBar
-
--- close / minimize buttons
-local function makeHeaderBtn(xOffset, col, symbol, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 22, 0, 22)
-    btn.Position = UDim2.new(1, xOffset, 0.5, -11)
-    btn.BackgroundColor3 = col
-    btn.Text = symbol
-    btn.TextSize = 13
-    btn.Font = Enum.Font.GothamBold
-    btn.TextColor3 = C.white
-    btn.BorderSizePixel = 0
-    btn.Parent = TitleBar
-    corner(btn, 11)
-    btn.MouseButton1Click:Connect(callback)
-    return btn
-end
-
-makeHeaderBtn(-12, Color3.fromRGB(255,80,80), "×", function()
-    TweenSvc:Create(Window, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
-        Size = UDim2.new(0, WIN_W, 0, 0),
-        BackgroundTransparency = 1,
-    }):Play()
-    task.wait(0.3)
-    ScreenGui:Destroy()
+-- close btn
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0,24,0,24)
+closeBtn.Position = UDim2.new(1,-32,0.5,-12)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200,60,60)
+closeBtn.Text = "✕"
+closeBtn.TextSize = 12
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextColor3 = WHITE
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = TB
+rnd(closeBtn,12)
+closeBtn.MouseButton1Click:Connect(function()
+    tween(Win,{Size=UDim2.new(0,W,0,0),Position=UDim2.new(0.5,-W/2,0.5,0)},0.25,Enum.EasingStyle.Quint)
+    task.wait(0.3) SG:Destroy()
 end)
 
+-- minimize btn
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0,24,0,24)
+minBtn.Position = UDim2.new(1,-60,0.5,-12)
+minBtn.BackgroundColor3 = ADIM
+minBtn.Text = "−"
+minBtn.TextSize = 14
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextColor3 = AGLOW
+minBtn.BorderSizePixel = 0
+minBtn.Parent = TB
+rnd(minBtn,12)
 local minimized = false
-makeHeaderBtn(-40, C.accentDim, "−", function()
+minBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
-    local targetH = minimized and 48 or WIN_H
-    TweenSvc:Create(Window, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
-        Size = UDim2.new(0, WIN_W, 0, targetH)
-    }):Play()
+    tween(Win,{Size=UDim2.new(0,W,0,minimized and 46 or H)},0.25,Enum.EasingStyle.Quint)
 end)
 
--- draggable title bar
-local dragging, ds, sp
-TitleBar.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.MouseButton1
-    or i.UserInputType == Enum.UserInputType.Touch then
-        dragging, ds, sp = true, i.Position, Window.Position
-        i.Changed:Connect(function()
-            if i.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
+-- drag
+local drag,ds,dp = false,nil,nil
+TB.InputBegan:Connect(function(i)
+    if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+        drag=true ds=i.Position dp=Win.Position
+        i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then drag=false end end)
     end
 end)
 UIS.InputChanged:Connect(function(i)
-    if dragging and (
-        i.UserInputType == Enum.UserInputType.MouseMovement or
-        i.UserInputType == Enum.UserInputType.Touch
-    ) then
-        local d = i.Position - ds
-        Window.Position = UDim2.new(
-            sp.X.Scale, sp.X.Offset + d.X,
-            sp.Y.Scale, sp.Y.Offset + d.Y
-        )
+    if drag and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then
+        local d=i.Position-ds
+        Win.Position = UDim2.new(dp.X.Scale,dp.X.Offset+d.X,dp.Y.Scale,dp.Y.Offset+d.Y)
     end
 end)
 
--- ── TAB BAR ──────────────────────────────────────────────
+-- ── TAB BAR ──
 local TabBar = Instance.new("Frame")
-TabBar.Size = UDim2.new(1, -24, 0, 30)
-TabBar.Position = UDim2.new(0, 12, 0, 54)
-TabBar.BackgroundColor3 = C.card
+TabBar.Size = UDim2.new(1,-16,0,32)
+TabBar.Position = UDim2.new(0,8,0,50)
+TabBar.BackgroundColor3 = PANEL
 TabBar.BorderSizePixel = 0
-TabBar.Parent = Window
-corner(TabBar, 8)
+TabBar.Parent = Win
+rnd(TabBar,8)
 
 local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
 tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-tabLayout.Padding = UDim.new(0, 2)
+tabLayout.Padding = UDim.new(0,3)
 tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 tabLayout.Parent = TabBar
 
 local tabPad = Instance.new("UIPadding")
-tabPad.PaddingLeft = UDim.new(0, 4)
-tabPad.PaddingRight = UDim.new(0, 4)
-tabPad.PaddingTop = UDim.new(0, 4)
-tabPad.PaddingBottom = UDim.new(0, 4)
+tabPad.PaddingLeft = UDim.new(0,4)
+tabPad.PaddingRight = UDim.new(0,4)
 tabPad.Parent = TabBar
 
--- ── CONTENT AREA ─────────────────────────────────────────
-local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -24, 1, -102)
-ContentArea.Position = UDim2.new(0, 12, 0, 92)
-ContentArea.BackgroundTransparency = 1
-ContentArea.ClipsDescendants = true
-ContentArea.Parent = Window
+-- ── CONTENT ──
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1,-16,1,-98)
+Content.Position = UDim2.new(0,8,0,88)
+Content.BackgroundTransparency = 1
+Content.ClipsDescendants = true
+Content.Parent = Win
 
--- ── SCROLL FRAME ─────────────────────────────────────────
-local function makeScrollPage()
-    local sf = Instance.new("ScrollingFrame")
-    sf.Size = UDim2.new(1, 0, 1, 0)
-    sf.BackgroundTransparency = 1
-    sf.BorderSizePixel = 0
-    sf.ScrollBarThickness = 3
-    sf.ScrollBarImageColor3 = C.accentDim
-    sf.CanvasSize = UDim2.new(0, 0, 0, 0)
-    sf.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    sf.Parent = ContentArea
+-- ══════════════════════════════════════════
+--  TAB / TOGGLE / BUTTON FACTORIES
+-- ══════════════════════════════════════════
+
+local allTabs = {}
+local currentTab = nil
+
+local function switchTab(tab)
+    if currentTab then
+        currentTab.page.Visible = false
+        currentTab.btn.BackgroundColor3 = Color3.fromRGB(20,28,50)
+        currentTab.btn.TextColor3 = MUTED
+    end
+    currentTab = tab
+    tab.page.Visible = true
+    tab.btn.BackgroundColor3 = ACCENT
+    tab.btn.TextColor3 = WHITE
+end
+
+local function makeTab(name)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0,60,1,-6)
+    btn.BackgroundColor3 = Color3.fromRGB(20,28,50)
+    btn.Text = name
+    btn.TextSize = 11
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextColor3 = MUTED
+    btn.BorderSizePixel = 0
+    btn.Parent = TabBar
+    rnd(btn,6)
+
+    local page = Instance.new("ScrollingFrame")
+    page.Size = UDim2.new(1,0,1,0)
+    page.BackgroundTransparency = 1
+    page.BorderSizePixel = 0
+    page.ScrollBarThickness = 3
+    page.ScrollBarImageColor3 = ADIM
+    page.CanvasSize = UDim2.new(0,0,0,0)
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    page.Visible = false
+    page.Parent = Content
 
     local layout = Instance.new("UIListLayout")
     layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 6)
-    layout.Parent = sf
+    layout.Padding = UDim.new(0,5)
+    layout.Parent = page
 
     local pad = Instance.new("UIPadding")
-    pad.PaddingBottom = UDim.new(0, 8)
-    pad.Parent = sf
+    pad.PaddingBottom = UDim.new(0,10)
+    pad.PaddingTop = UDim.new(0,4)
+    pad.Parent = page
 
-    return sf
-end
+    local tab = {btn=btn, page=page}
+    allTabs[#allTabs+1] = tab
 
--- ── TOGGLE COMPONENT ─────────────────────────────────────
-local function makeToggle(parent, order, labelText, desc, callback)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 52)
-    row.BackgroundColor3 = C.card
-    row.BorderSizePixel = 0
-    row.LayoutOrder = order
-    row.Parent = parent
-    corner(row, 8)
-    stroke(row, C.border, 1)
-
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -60, 0, 20)
-    lbl.Position = UDim2.new(0, 12, 0, 8)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = labelText
-    lbl.TextSize = 13
-    lbl.Font = Enum.Font.GothamSemibold
-    lbl.TextColor3 = C.textPrimary
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = row
-
-    local sub = Instance.new("TextLabel")
-    sub.Size = UDim2.new(1, -60, 0, 16)
-    sub.Position = UDim2.new(0, 12, 0, 28)
-    sub.BackgroundTransparency = 1
-    sub.Text = desc or ""
-    sub.TextSize = 11
-    sub.Font = Enum.Font.Gotham
-    sub.TextColor3 = C.textMuted
-    sub.TextXAlignment = Enum.TextXAlignment.Left
-    sub.Parent = row
-
-    -- toggle pill
-    local pill = Instance.new("Frame")
-    pill.Size = UDim2.new(0, 40, 0, 22)
-    pill.Position = UDim2.new(1, -52, 0.5, -11)
-    pill.BackgroundColor3 = C.border
-    pill.BorderSizePixel = 0
-    pill.Parent = row
-    corner(pill, 11)
-
-    local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 16, 0, 16)
-    knob.Position = UDim2.new(0, 3, 0.5, -8)
-    knob.BackgroundColor3 = C.textMuted
-    knob.BorderSizePixel = 0
-    knob.Parent = pill
-    corner(knob, 8)
-
-    local state = false
-    local function update(v)
-        state = v
-        TweenSvc:Create(pill, TweenInfo.new(0.2), {
-            BackgroundColor3 = v and C.accent or C.border
-        }):Play()
-        TweenSvc:Create(knob, TweenInfo.new(0.2), {
-            Position = v
-                and UDim2.new(1, -19, 0.5, -8)
-                or  UDim2.new(0,  3,  0.5, -8),
-            BackgroundColor3 = v and C.white or C.textMuted,
-        }):Play()
-        callback(v)
-    end
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = row
-    btn.MouseButton1Click:Connect(function()
-        update(not state)
-    end)
-
-    -- hover highlight
-    btn.MouseEnter:Connect(function()
-        TweenSvc:Create(row, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(28,40,74)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenSvc:Create(row, TweenInfo.new(0.15), {BackgroundColor3 = C.card}):Play()
-    end)
-
-    return update  -- returns setter for external control
-end
-
--- ── BUTTON COMPONENT ─────────────────────────────────────
-local function makeButton(parent, order, labelText, desc, callback)
-    local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, 52)
-    row.BackgroundColor3 = C.card
-    row.BorderSizePixel = 0
-    row.LayoutOrder = order
-    row.Parent = parent
-    corner(row, 8)
-    stroke(row, C.border, 1)
-
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -56, 0, 20)
-    lbl.Position = UDim2.new(0, 12, 0, 8)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = labelText
-    lbl.TextSize = 13
-    lbl.Font = Enum.Font.GothamSemibold
-    lbl.TextColor3 = C.textPrimary
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = row
-
-    local sub = Instance.new("TextLabel")
-    sub.Size = UDim2.new(1, -56, 0, 16)
-    sub.Position = UDim2.new(0, 12, 0, 28)
-    sub.BackgroundTransparency = 1
-    sub.Text = desc or ""
-    sub.TextSize = 11
-    sub.Font = Enum.Font.Gotham
-    sub.TextColor3 = C.textMuted
-    sub.TextXAlignment = Enum.TextXAlignment.Left
-    sub.Parent = row
-
-    -- arrow icon
-    local arrow = Instance.new("TextLabel")
-    arrow.Size = UDim2.new(0, 28, 0, 28)
-    arrow.Position = UDim2.new(1, -40, 0.5, -14)
-    arrow.BackgroundColor3 = C.accentDim
-    arrow.Text = "›"
-    arrow.TextSize = 20
-    arrow.Font = Enum.Font.GothamBold
-    arrow.TextColor3 = C.accent
-    arrow.BorderSizePixel = 0
-    arrow.Parent = row
-    corner(arrow, 6)
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = row
-
-    btn.MouseButton1Click:Connect(function()
-        TweenSvc:Create(row, TweenInfo.new(0.08), {BackgroundColor3 = C.accentDim}):Play()
-        task.wait(0.1)
-        TweenSvc:Create(row, TweenInfo.new(0.15), {BackgroundColor3 = C.card}):Play()
-        callback()
-    end)
-    btn.MouseEnter:Connect(function()
-        TweenSvc:Create(row, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(28,40,74)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenSvc:Create(row, TweenInfo.new(0.15), {BackgroundColor3 = C.card}):Play()
-    end)
-end
-
--- ── SECTION HEADER ───────────────────────────────────────
-local function makeSection(parent, order, text)
-    local f = Instance.new("Frame")
-    f.Size = UDim2.new(1, 0, 0, 20)
-    f.BackgroundTransparency = 1
-    f.LayoutOrder = order
-    f.Parent = parent
-
-    local l = Instance.new("TextLabel")
-    l.Size = UDim2.new(1, 0, 1, 0)
-    l.BackgroundTransparency = 1
-    l.Text = text:upper()
-    l.TextSize = 10
-    l.Font = Enum.Font.GothamBold
-    l.TextColor3 = C.accent
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.LetterSpacingOffset = 2
-    l.Parent = f
-end
-
--- ── BUILD TABS ───────────────────────────────────────────
-local tabs = {}
-local activeTab = nil
-
-local function makeTab(name, icon, pageBuilder)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 76, 1, 0)
-    btn.BackgroundColor3 = C.panel
-    btn.Text = (icon or "") .. "  " .. name
-    btn.TextSize = 12
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextColor3 = C.textMuted
-    btn.BorderSizePixel = 0
-    btn.Parent = TabBar
-    corner(btn, 6)
-
-    local page = makeScrollPage()
-    page.Visible = false
-    pageBuilder(page)
-
-    local tab = { btn=btn, page=page }
-
-    btn.MouseButton1Click:Connect(function()
-        if activeTab then
-            activeTab.page.Visible = false
-            TweenSvc:Create(activeTab.btn, TweenInfo.new(0.15), {
-                BackgroundColor3 = C.panel,
-                TextColor3 = C.textMuted,
-            }):Play()
-        end
-        activeTab = tab
-        page.Visible = true
-        TweenSvc:Create(btn, TweenInfo.new(0.15), {
-            BackgroundColor3 = C.accent,
-            TextColor3 = C.white,
-        }):Play()
-    end)
-
-    tabs[#tabs+1] = tab
+    btn.MouseButton1Click:Connect(function() switchTab(tab) end)
     return tab
 end
 
--- ── TAB: FARM ────────────────────────────────────────────
-makeTab("Farm", "🌿", function(page)
-    makeSection(page, 1, "Automation")
+-- section label
+local sectionOrder = 0
+local function makeSection(page, text)
+    sectionOrder = sectionOrder+1
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(1,0,0,22)
+    f.BackgroundTransparency = 1
+    f.LayoutOrder = sectionOrder
+    f.Parent = page
 
-    makeToggle(page, 2, "Auto Buy", "Purchase all affordable items", function(v)
-        AutoBuy = v
-        notify("Auto Buy", v and "Enabled" or "Disabled", 3)
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(1,-8,1,0)
+    l.Position = UDim2.new(0,4,0,0)
+    l.BackgroundTransparency = 1
+    l.Text = "  " .. text:upper()
+    l.TextSize = 10
+    l.Font = Enum.Font.GothamBold
+    l.TextColor3 = ACCENT
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    l.Parent = f
+
+    -- divider
+    local div = Instance.new("Frame")
+    div.Size = UDim2.new(1,-8,0,1)
+    div.Position = UDim2.new(0,4,1,-1)
+    div.BackgroundColor3 = BORDER
+    div.BorderSizePixel = 0
+    div.Parent = f
+end
+
+-- toggle
+local function makeToggle(page, labelText, descText, callback)
+    sectionOrder = sectionOrder+1
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1,0,0,54)
+    row.BackgroundColor3 = CARD
+    row.BorderSizePixel = 0
+    row.LayoutOrder = sectionOrder
+    row.Parent = page
+    rnd(row,8) brdr(row,BORDER,1)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,-62,0,20)
+    lbl.Position = UDim2.new(0,12,0,9)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextSize = 13
+    lbl.Font = Enum.Font.GothamSemibold
+    lbl.TextColor3 = TEXT
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    local desc = Instance.new("TextLabel")
+    desc.Size = UDim2.new(1,-62,0,16)
+    desc.Position = UDim2.new(0,12,0,30)
+    desc.BackgroundTransparency = 1
+    desc.Text = descText or ""
+    desc.TextSize = 11
+    desc.Font = Enum.Font.Gotham
+    desc.TextColor3 = MUTED
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.Parent = row
+
+    local pill = Instance.new("Frame")
+    pill.Size = UDim2.new(0,42,0,22)
+    pill.Position = UDim2.new(1,-54,0.5,-11)
+    pill.BackgroundColor3 = BORDER
+    pill.BorderSizePixel = 0
+    pill.Parent = row
+    rnd(pill,11)
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0,16,0,16)
+    knob.Position = UDim2.new(0,3,0.5,-8)
+    knob.BackgroundColor3 = MUTED
+    knob.BorderSizePixel = 0
+    knob.Parent = pill
+    rnd(knob,8)
+
+    local on = false
+    local function set(v)
+        on = v
+        tween(pill,{BackgroundColor3 = v and ACCENT or BORDER})
+        tween(knob,{
+            Position = v and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8),
+            BackgroundColor3 = v and WHITE or MUTED,
+        })
+        callback(v)
+    end
+
+    local clickBtn = Instance.new("TextButton")
+    clickBtn.Size = UDim2.new(1,0,1,0)
+    clickBtn.BackgroundTransparency = 1
+    clickBtn.Text = ""
+    clickBtn.Parent = row
+    clickBtn.MouseButton1Click:Connect(function() set(not on) end)
+    clickBtn.MouseEnter:Connect(function() tween(row,{BackgroundColor3=Color3.fromRGB(26,36,66)}) end)
+    clickBtn.MouseLeave:Connect(function() tween(row,{BackgroundColor3=CARD}) end)
+
+    return set
+end
+
+-- action button
+local function makeButton(page, labelText, descText, callback)
+    sectionOrder = sectionOrder+1
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1,0,0,54)
+    row.BackgroundColor3 = CARD
+    row.BorderSizePixel = 0
+    row.LayoutOrder = sectionOrder
+    row.Parent = page
+    rnd(row,8) brdr(row,BORDER,1)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,-52,0,20)
+    lbl.Position = UDim2.new(0,12,0,9)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextSize = 13
+    lbl.Font = Enum.Font.GothamSemibold
+    lbl.TextColor3 = TEXT
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    local desc = Instance.new("TextLabel")
+    desc.Size = UDim2.new(1,-52,0,16)
+    desc.Position = UDim2.new(0,12,0,30)
+    desc.BackgroundTransparency = 1
+    desc.Text = descText or ""
+    desc.TextSize = 11
+    desc.Font = Enum.Font.Gotham
+    desc.TextColor3 = MUTED
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.Parent = row
+
+    local pill = Instance.new("Frame")
+    pill.Size = UDim2.new(0,32,0,32)
+    pill.Position = UDim2.new(1,-42,0.5,-16)
+    pill.BackgroundColor3 = ADIM
+    pill.BorderSizePixel = 0
+    pill.Parent = row
+    rnd(pill,8)
+
+    local arrow = Instance.new("TextLabel")
+    arrow.Size = UDim2.new(1,0,1,0)
+    arrow.BackgroundTransparency = 1
+    arrow.Text = "▶"
+    arrow.TextSize = 13
+    arrow.Font = Enum.Font.GothamBold
+    arrow.TextColor3 = AGLOW
+    arrow.Parent = pill
+
+    local clickBtn = Instance.new("TextButton")
+    clickBtn.Size = UDim2.new(1,0,1,0)
+    clickBtn.BackgroundTransparency = 1
+    clickBtn.Text = ""
+    clickBtn.Parent = row
+    clickBtn.MouseButton1Click:Connect(function()
+        tween(row,{BackgroundColor3=ADIM},0.08)
+        tween(pill,{BackgroundColor3=ACCENT},0.08)
+        task.wait(0.12)
+        tween(row,{BackgroundColor3=CARD},0.2)
+        tween(pill,{BackgroundColor3=ADIM},0.2)
+        callback()
     end)
+    clickBtn.MouseEnter:Connect(function() tween(row,{BackgroundColor3=Color3.fromRGB(26,36,66)}) end)
+    clickBtn.MouseLeave:Connect(function() tween(row,{BackgroundColor3=CARD}) end)
+end
 
-    makeToggle(page, 3, "Auto Upgrade", "Upgrade machines as cash grows", function(v)
-        AutoUpgrade = v
-        notify("Auto Upgrade", v and "Enabled" or "Disabled", 3)
+-- ══════════════════════════════════════════
+--  FARM TAB
+-- ══════════════════════════════════════════
+local farmTab = makeTab("Farm")
+do
+    local p = farmTab.page
+    makeSection(p,"Automation")
+    makeToggle(p,"Auto Buy","Buys all affordable items instantly",function(v) AutoBuy=v notify("Auto Buy",v and"Enabled"or"Disabled",3) end)
+    makeToggle(p,"Auto Upgrade","Upgrades machines as cash grows",function(v) AutoUpgrade=v notify("Auto Upgrade",v and"Enabled"or"Disabled",3) end)
+    makeToggle(p,"Auto Fruit","Teleports to each lemon tree & collects",function(v) AutoFruit=v notify("Auto Fruit",v and"Enabled"or"Disabled",3) end)
+    makeToggle(p,"Auto Power Level","Spams UpgradePowerLevel remote",function(v) AutoPowerLevel=v notify("Auto Power Level",v and"Enabled"or"Disabled",3) end)
+    makeSection(p,"Progression")
+    makeToggle(p,"Auto Rebirth","Rebirths when investors payout is worth it",function(v)
+        AutoRebirth=v
+        if v and not getRebirthRemote() then notify("Auto Rebirth","Remote not found!",5) return end
+        notify("Auto Rebirth",v and"Enabled"or"Disabled",3)
     end)
-
-    makeToggle(page, 4, "Auto Fruit", "Teleport & collect lemon fruit", function(v)
-        AutoFruit = v
-        notify("Auto Fruit", v and "Enabled" or "Disabled", 3)
+    makeToggle(p,"Auto Evolve","Evolves at 100% progress (×10 income speed)",function(v)
+        AutoEvolve=v
+        if v and not getEvolveRemote() then notify("Auto Evolve","Remote not found!",5) return end
+        notify("Auto Evolve",v and"Enabled"or"Disabled",3)
     end)
+end
 
-    makeToggle(page, 5, "Auto Power Level", "Spam UpgradePowerLevel remote", function(v)
-        AutoPowerLevel = v
-        notify("Auto Power Level", v and "Enabled" or "Disabled", 3)
-    end)
-end)
-
--- ── TAB: REBIRTH ─────────────────────────────────────────
-makeTab("Rebirth", "♻", function(page)
-    makeSection(page, 1, "Progression")
-
-    makeToggle(page, 2, "Auto Rebirth", "Rebirths when payout is worth it", function(v)
-        AutoRebirth = v
-        if v and not getRebirthRemote() then
-            notify("Auto Rebirth", "Remote not found in your tycoon!", 5)
-            return
-        end
-        notify("Auto Rebirth", v and "Enabled" or "Disabled", 3)
-    end)
-
-    makeToggle(page, 3, "Auto Evolve", "Evolves at 100% progress (×10 speed)", function(v)
-        AutoEvolve = v
-        if v and not getEvolveRemote() then
-            notify("Auto Evolve", "Remote not found in your tycoon!", 5)
-            return
-        end
-        notify("Auto Evolve", v and "Enabled" or "Disabled", 3)
-    end)
-end)
-
--- ── TAB: SEWER ───────────────────────────────────────────
-makeTab("Sewer", "🚧", function(page)
-    makeSection(page, 1, "Sewer Actions")
-
-    makeButton(page, 2, "Pull All Levers", "Activates sewer doors & grabs keys", function()
+-- ══════════════════════════════════════════
+--  SEWER TAB
+-- ══════════════════════════════════════════
+local sewerTab = makeTab("Sewer")
+do
+    local p = sewerTab.page
+    makeSection(p,"Sewer Actions")
+    makeButton(p,"Pull All Levers","Fire all sewer door levers + grab keys",function()
         local n = pullAllLevers()
-        notify("Pull Levers",
-            n > 0 and ("Pulled " .. n .. " lever(s) + grabbed keys")
-                  or  "No levers found — is the sewer loaded?",
-            4)
+        notify("Pull Levers", n>0 and("Pulled "..n.." lever(s) + keys grabbed") or "No levers found",4)
     end)
-
-    makeButton(page, 3, "Vine Harvest", "Full sewer run — levers → keys → vine", function()
-        notify("Vine Harvest", "Running sewer sequence…", 2)
+    makeButton(p,"Vine Harvest","Full run: levers → keys → door → vine",function()
+        notify("Vine Harvest","Running sewer sequence...",2)
         task.spawn(function()
-            local ok, err = doSewerRun()
-            notify("Vine Harvest",
-                ok and "Done! Levers, keys, vine all collected."
-                   or ("Failed: " .. tostring(err)),
-                5)
+            local ok,err = doSewerRun()
+            notify("Vine Harvest",ok and"Done! Everything collected." or("Failed: "..tostring(err)),5)
         end)
     end)
-
-    makeButton(page, 4, "Teleport to Alien", "Jump to sewer alien (UFO key spot)", function()
-        local ok, err = teleportToAlien()
-        notify("Sewer Alien",
-            ok and "Teleported to the UFO alien."
-               or ("Failed: " .. tostring(err)),
-            3)
+    makeButton(p,"Teleport to Alien","Jump to sewer alien (UFO key location)",function()
+        local ok,err = teleportToAlien()
+        notify("Sewer Alien",ok and"Teleported to the UFO alien." or("Failed: "..tostring(err)),3)
     end)
-end)
+end
 
--- ── TAB: STATS ───────────────────────────────────────────
-makeTab("Stats", "📊", function(page)
-    makeSection(page, 1, "Live Monitor")
+-- ══════════════════════════════════════════
+--  MISC TAB
+-- ══════════════════════════════════════════
+local miscTab = makeTab("Misc")
+do
+    local p = miscTab.page
+    makeSection(p,"Movement")
+    makeToggle(p,"Fly","WASD + Space/Shift to fly around freely",function(v)
+        FlyEnabled=v
+        if v then task.spawn(startFly) end
+        notify("Fly",v and"Enabled — WASD+Space to fly"or"Disabled",3)
+    end)
+    makeToggle(p,"Noclip","Walk through walls and parts",function(v)
+        NoclipEnabled=v
+        if v then task.spawn(startNoclip) end
+        notify("Noclip",v and"Enabled"or"Disabled",3)
+    end)
+    makeToggle(p,"Speed Hack","Sets walkspeed to 80",function(v)
+        SpeedEnabled=v
+        setSpeed(v)
+        notify("Speed",v and"WalkSpeed → 80"or"WalkSpeed → 16",3)
+    end)
+    makeToggle(p,"Infinite Jump","Jump again in mid-air",function(v)
+        InfJumpEnabled=v
+        notify("Infinite Jump",v and"Enabled"or"Disabled",3)
+    end)
+    makeSection(p,"Utility")
+    makeButton(p,"Teleport to Spawn","Moves you to spawn point",function()
+        local char = LP.Character
+        local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
+            if spawn then
+                pcall(function() hrp.CFrame = spawn.CFrame + Vector3.new(0,3,0) end)
+                notify("Teleport","Moved to spawn.",3)
+            else
+                notify("Teleport","No SpawnLocation found.",3)
+            end
+        end
+    end)
+    makeButton(p,"Reset Character","Kills and respawns your character",function()
+        local char = LP.Character
+        local hum  = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.Health = 0 notify("Reset","Character reset.",3) end
+    end)
+end
 
-    local statCard = Instance.new("Frame")
-    statCard.Size = UDim2.new(1, 0, 0, 240)
-    statCard.BackgroundColor3 = C.card
-    statCard.BorderSizePixel = 0
-    statCard.LayoutOrder = 2
-    statCard.Parent = page
-    corner(statCard, 8)
-    stroke(statCard, C.border, 1)
+-- ══════════════════════════════════════════
+--  STATS TAB
+-- ══════════════════════════════════════════
+local statsTab = makeTab("Stats")
+do
+    local p = statsTab.page
+    makeSection(p,"Live Monitor")
+    sectionOrder = sectionOrder+1
 
-    local statBody = Instance.new("TextLabel")
-    statBody.Size = UDim2.new(1, -20, 1, -12)
-    statBody.Position = UDim2.new(0, 10, 0, 8)
-    statBody.BackgroundTransparency = 1
-    statBody.RichText = true
-    statBody.Text = "…"
-    statBody.TextSize = 13
-    statBody.Font = Enum.Font.Code
-    statBody.TextColor3 = C.textData
-    statBody.TextXAlignment = Enum.TextXAlignment.Left
-    statBody.TextYAlignment = Enum.TextYAlignment.Top
-    statBody.Parent = statCard
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(1,0,0,260)
+    card.BackgroundColor3 = CARD
+    card.BorderSizePixel = 0
+    card.LayoutOrder = sectionOrder
+    card.Parent = p
+    rnd(card,8) brdr(card,BORDER,1)
 
-    -- fps counter
-    local frames, fps, fpsT = 0, 0, tick()
+    local body = Instance.new("TextLabel")
+    body.Size = UDim2.new(1,-20,1,-16)
+    body.Position = UDim2.new(0,10,0,10)
+    body.BackgroundTransparency = 1
+    body.RichText = true
+    body.Text = "loading..."
+    body.TextSize = 13
+    body.Font = Enum.Font.Code
+    body.TextColor3 = TEXT
+    body.TextXAlignment = Enum.TextXAlignment.Left
+    body.TextYAlignment = Enum.TextYAlignment.Top
+    body.Parent = card
+
+    local frames,fps,fpsT = 0,0,tick()
     RunService.RenderStepped:Connect(function()
-        frames = frames + 1
-        if tick() - fpsT >= 1 then fps, frames, fpsT = frames, 0, tick() end
+        frames=frames+1
+        if tick()-fpsT>=1 then fps=frames frames=0 fpsT=tick() end
     end)
 
-    local function fmtOn(b)
-        return b and "<font color='#48E68C'>● ON</font>"
-                  or "<font color='#6688AA'>○ off</font>"
+    local function dot(b)
+        return b and "<font color='#3CDC82'>● ON</font>" or "<font color='#556688'>○ off</font>"
     end
 
     task.spawn(function()
-        while statCard.Parent do
-            local cashStr = "?"
-            local ls = LocalPlayer:FindFirstChild("leaderstats")
+        while card.Parent do
+            local cash = "?"
+            local ls = LP:FindFirstChild("leaderstats")
             local c  = ls and ls:FindFirstChild("Cash")
-            if c then cashStr = tostring(c.Value) end
+            if c then cash = tostring(c.Value) end
+            local prog = getEvolveProgress() or 0
 
-            local progress = getEvolveProgress() or 0
-
-            statBody.Text = string.format(
-                "<font color='#6688BB'>FPS</font>         <font color='#C0D8FF'>%d</font>\n"
-             .. "<font color='#6688BB'>Cash</font>        <font color='#C0D8FF'>%s</font>\n"
-             .. "<font color='#6688BB'>Evolve %%</font>   <font color='#C0D8FF'>%.1f%%</font>\n"
-             .. "\n"
-             .. "<font color='#6688BB'>Buys</font>        <font color='#C0D8FF'>%d</font>   %s\n"
-             .. "<font color='#6688BB'>Upgrades</font>    <font color='#C0D8FF'>%d</font>   %s\n"
-             .. "<font color='#6688BB'>Fruit</font>       <font color='#C0D8FF'>%d</font>   %s\n"
-             .. "<font color='#6688BB'>Rebirths</font>    <font color='#C0D8FF'>%d</font>   %s\n"
-             .. "<font color='#6688BB'>Evolves</font>     <font color='#C0D8FF'>%d</font>   %s",
-                fps, cashStr, progress,
-                stats.buys,     fmtOn(AutoBuy),
-                stats.upgrades, fmtOn(AutoUpgrade),
-                stats.fruit,    fmtOn(AutoFruit),
-                stats.rebirths, fmtOn(AutoRebirth),
-                stats.evolves,  fmtOn(AutoEvolve)
+            body.Text = string.format(
+                "<font color='#5588BB'>FPS        </font><font color='#AACCFF'>%d</font>\n"
+             .. "<font color='#5588BB'>Cash       </font><font color='#AACCFF'>%s</font>\n"
+             .. "<font color='#5588BB'>Evolve     </font><font color='#AACCFF'>%.1f%%</font>\n\n"
+             .. "<font color='#5588BB'>Buys       </font><font color='#AACCFF'>%d  </font>%s\n"
+             .. "<font color='#5588BB'>Upgrades   </font><font color='#AACCFF'>%d  </font>%s\n"
+             .. "<font color='#5588BB'>Fruit      </font><font color='#AACCFF'>%d  </font>%s\n"
+             .. "<font color='#5588BB'>Rebirths   </font><font color='#AACCFF'>%d  </font>%s\n"
+             .. "<font color='#5588BB'>Evolves    </font><font color='#AACCFF'>%d  </font>%s",
+                fps, cash, prog,
+                stats.buys,     dot(AutoBuy),
+                stats.upgrades, dot(AutoUpgrade),
+                stats.fruit,    dot(AutoFruit),
+                stats.rebirths, dot(AutoRebirth),
+                stats.evolves,  dot(AutoEvolve)
             )
             task.wait(0.25)
         end
     end)
-end)
+end
 
--- ── ACTIVATE FIRST TAB ───────────────────────────────────
-tabs[1].btn.MouseButton1Click:Fire()
+-- ══════════════════════════════════════════
+--  CREDITS TAB
+-- ══════════════════════════════════════════
+local creditsTab = makeTab("Credits")
+do
+    local p = creditsTab.page
+    makeSection(p,"About")
+    sectionOrder = sectionOrder+1
 
--- ── FOOTER ───────────────────────────────────────────────
-local footer = Instance.new("TextLabel")
-footer.Size = UDim2.new(1, 0, 0, 18)
-footer.Position = UDim2.new(0, 0, 1, -20)
-footer.BackgroundTransparency = 1
-footer.Text = "cobalt  •  sell lemons autofarm"
-footer.TextSize = 10
-footer.Font = Enum.Font.Gotham
-footer.TextColor3 = C.textMuted
-footer.Parent = Window
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(1,0,0,180)
+    card.BackgroundColor3 = CARD
+    card.BorderSizePixel = 0
+    card.LayoutOrder = sectionOrder
+    card.Parent = p
+    rnd(card,8) brdr(card,BORDER,1)
 
--- ─────────────────────────────────────────────────────────
---  BOOT NOTIFICATION
--- ─────────────────────────────────────────────────────────
-notify("Cobalt Loaded", "Tycoon found. Autofarm ready.", 4)
+    -- cobalt wordmark
+    local bigName = Instance.new("TextLabel")
+    bigName.Size = UDim2.new(1,0,0,48)
+    bigName.Position = UDim2.new(0,0,0,18)
+    bigName.BackgroundTransparency = 1
+    bigName.Text = "cobalt"
+    bigName.TextSize = 36
+    bigName.Font = Enum.Font.GothamBold
+    bigName.TextColor3 = ACCENT
+    bigName.TextXAlignment = Enum.TextXAlignment.Center
+    bigName.Parent = card
+
+    local version = Instance.new("TextLabel")
+    version.Size = UDim2.new(1,0,0,18)
+    version.Position = UDim2.new(0,0,0,58)
+    version.BackgroundTransparency = 1
+    version.Text = "sell lemons autofarm  •  v3.0"
+    version.TextSize = 11
+    version.Font = Enum.Font.Gotham
+    version.TextColor3 = MUTED
+    version.TextXAlignment = Enum.TextXAlignment.Center
+    version.Parent = card
+
+    -- divider
+    local div = Instance.new("Frame")
+    div.Size = UDim2.new(0.7,0,0,1)
+    div.Position = UDim2.new(0.15,0,0,88)
+    div.BackgroundColor3 = BORDER
+    div.BorderSizePixel = 0
+    div.Parent = card
+
+    local madeBy = Instance.new("TextLabel")
+    madeBy.Size = UDim2.new(1,0,0,18)
+    madeBy.Position = UDim2.new(0,0,0,100)
+    madeBy.BackgroundTransparency = 1
+    madeBy.Text = "made by"
+    madeBy.TextSize = 11
+    madeBy.Font = Enum.Font.Gotham
+    madeBy.TextColor3 = MUTED
+    madeBy.TextXAlignment = Enum.TextXAlignment.Center
+    madeBy.Parent = card
+
+    local poetryLabel = Instance.new("TextLabel")
+    poetryLabel.Size = UDim2.new(1,0,0,26)
+    poetryLabel.Position = UDim2.new(0,0,0,118)
+    poetryLabel.BackgroundTransparency = 1
+    poetryLabel.Text = "poetry"
+    poetryLabel.TextSize = 20
+    poetryLabel.Font = Enum.Font.GothamBold
+    poetryLabel.TextColor3 = TEXT
+    poetryLabel.TextXAlignment = Enum.TextXAlignment.Center
+    poetryLabel.Parent = card
+
+    -- link button
+    sectionOrder = sectionOrder+1
+    local linkRow = Instance.new("Frame")
+    linkRow.Size = UDim2.new(1,0,0,44)
+    linkRow.BackgroundColor3 = ADIM
+    linkRow.BorderSizePixel = 0
+    linkRow.LayoutOrder = sectionOrder
+    linkRow.Parent = p
+    rnd(linkRow,8) brdr(linkRow,ACCENT,1)
+
+    local linkIcon = Instance.new("TextLabel")
+    linkIcon.Size = UDim2.new(0,40,1,0)
+    linkIcon.BackgroundTransparency = 1
+    linkIcon.Text = "🔗"
+    linkIcon.TextSize = 18
+    linkIcon.Font = Enum.Font.Gotham
+    linkIcon.Parent = linkRow
+
+    local linkLbl = Instance.new("TextLabel")
+    linkLbl.Size = UDim2.new(1,-80,0,20)
+    linkLbl.Position = UDim2.new(0,40,0,5)
+    linkLbl.BackgroundTransparency = 1
+    linkLbl.Text = "guns.lol/erode"
+    linkLbl.TextSize = 13
+    linkLbl.Font = Enum.Font.GothamBold
+    linkLbl.TextColor3 = AGLOW
+    linkLbl.TextXAlignment = Enum.TextXAlignment.Left
+    linkLbl.Parent = linkRow
+
+    local linkSub = Instance.new("TextLabel")
+    linkSub.Size = UDim2.new(1,-80,0,14)
+    linkSub.Position = UDim2.new(0,40,0,25)
+    linkSub.BackgroundTransparency = 1
+    linkSub.Text = "click to open in browser"
+    linkSub.TextSize = 10
+    linkSub.Font = Enum.Font.Gotham
+    linkSub.TextColor3 = MUTED
+    linkSub.TextXAlignment = Enum.TextXAlignment.Left
+    linkSub.Parent = linkRow
+
+    local linkBtn = Instance.new("TextButton")
+    linkBtn.Size = UDim2.new(1,0,1,0)
+    linkBtn.BackgroundTransparency = 1
+    linkBtn.Text = ""
+    linkBtn.Parent = linkRow
+    linkBtn.MouseButton1Click:Connect(function()
+        tween(linkRow,{BackgroundColor3=ACCENT},0.1)
+        task.wait(0.15)
+        tween(linkRow,{BackgroundColor3=ADIM},0.2)
+        pcall(function()
+            if syn and syn.request then
+                syn.request({Url="guns.lol/erode",Method="GET"})
+            end
+        end)
+        -- standard executor open url
+        pcall(function() setclipboard("https://guns.lol/erode") end)
+        notify("Link Copied","guns.lol/erode copied to clipboard",4)
+    end)
+    linkBtn.MouseEnter:Connect(function() tween(linkRow,{BackgroundColor3=Color3.fromRGB(30,65,155)}) end)
+    linkBtn.MouseLeave:Connect(function() tween(linkRow,{BackgroundColor3=ADIM}) end)
+end
+
+-- ── ACTIVATE FARM TAB ──
+switchTab(farmTab)
+
+-- ── FOOTER ──
+local foot = Instance.new("TextLabel")
+foot.Size = UDim2.new(1,0,0,14)
+foot.Position = UDim2.new(0,0,1,-16)
+foot.BackgroundTransparency = 1
+foot.Text = "cobalt  •  poetry"
+foot.TextSize = 9
+foot.Font = Enum.Font.Gotham
+foot.TextColor3 = Color3.fromRGB(50,70,110)
+foot.TextXAlignment = Enum.TextXAlignment.Center
+foot.Parent = Win
+
+notify("Cobalt","Loaded successfully. Tycoon found.",4)
