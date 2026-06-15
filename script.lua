@@ -166,7 +166,7 @@ local function buyAllAffordable()
     end
 end
 task.spawn(function()
-    while true do task.wait(0.05)
+    while true do task.wait(0.01)
         if AutoBuy then pcall(buyAllAffordable) end
     end
 end)
@@ -188,7 +188,7 @@ local function refreshUpgrades()
     end
 end
 task.spawn(function()
-    while true do task.wait(0.25)
+    while true do task.wait(0.05)
         if AutoUpgrade then
             if tick()-lastScan > 3 then refreshUpgrades() lastScan=tick() end
             for _, rem in ipairs(upgradeRemotes) do
