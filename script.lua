@@ -53,6 +53,79 @@ local function tween(obj, props, dur, style)
     TweenSvc:Create(obj, TweenInfo.new(dur or 0.18, style or Enum.EasingStyle.Quad), props):Play()
 end
 
+-- ═══════════════════════════════════════════════
+--  NOTIFICATION
+-- ═══════════════════════════════════════════════
+local notifY = 16
+local function notify(title, body, dur)
+    local pg = LP:FindFirstChildOfClass("PlayerGui")
+    if not pg then return end
+    local g = Instance.new("ScreenGui")
+    g.Name = "CobaltNotif"
+    g.ResetOnSpawn = false
+    g.IgnoreGuiInset = true
+    g.DisplayOrder = 10002
+    g.Parent = pg
+
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(0, 270, 0, 58)
+    f.Position = UDim2.new(1, 20, 0, notifY)
+    f.BackgroundColor3 = PANEL
+    f.BorderSizePixel = 0
+    f.Parent = g
+    rnd(f, 8) brdr(f, ACCENT, 1)
+
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(0, 3, 1, -14)
+    bar.Position = UDim2.new(0, 7, 0, 7)
+    bar.BackgroundColor3 = ACCENT
+    bar.BorderSizePixel = 0
+    bar.Parent = f
+    rnd(bar, 2)
+
+    local tl = Instance.new("TextLabel")
+    tl.Size = UDim2.new(1,-20,0,18)
+    tl.Position = UDim2.new(0,18,0,8)
+    tl.BackgroundTransparency = 1
+    tl.Text = title
+    tl.TextSize = 12
+    tl.Font = Enum.Font.GothamBold
+    tl.TextColor3 = AGLOW
+    tl.TextXAlignment = Enum.TextXAlignment.Left
+    tl.Parent = f
+
+    local bl = Instance.new("TextLabel")
+    bl.Size = UDim2.new(1,-20,0,16)
+    bl.Position = UDim2.new(0,18,0,28)
+    bl.BackgroundTransparency = 1
+    bl.Text = body
+    bl.TextSize = 11
+    bl.Font = Enum.Font.Gotham
+    bl.TextColor3 = MUTED
+    bl.TextXAlignment = Enum.TextXAlignment.Left
+    bl.Parent = f
+
+    tween(f, {Position = UDim2.new(1,-286,0,notifY)}, 0.3, Enum.EasingStyle.Quint)
+    task.delay(dur or 4, function()
+        tween(f, {Position = UDim2.new(1,20,0,notifY)}, 0.3, Enum.EasingStyle.Quint)
+        task.wait(0.35)
+        g:Destroy()
+    end)
+end
+
+-- ═══════════════════════════════════════════════
+--  FIND TYCOON
+-- ═══════════════════════════════════════════════
+local userTycoon = (function()
+    for _, v in pairs(workspace:GetChildren()) do
+        if v:IsA("Folder") and v.Name:match("Tycoon%d") then
+            if v:FindFirstChild("Owner") and v.Owner.Value == LP then
+                return v
+            end
+        end
+    end
+end)()
+
 if not userTycoon then
     notify("Cobalt — Error", "No tycoon found. Claim one first.", 8)
     return
@@ -67,13 +140,6 @@ local AutoFruit      = false
 local AutoRebirth    = false
 local AutoEvolve     = false
 local AutoPowerLevel = false
--- speeds (seconds between actions when enabled)
-local AutoBuySpeed        = 0.01
-local AutoUpgradeSpeed    = 0.05
-local AutoFruitSpeed      = 0.1
-local AutoRebirthSpeed    = 0.5
-local AutoEvolveSpeed     = 0.5
-local AutoPowerLevelSpeed = 0.25
 local FlyEnabled     = false
 local NoclipEnabled  = false
 local SpeedEnabled   = false
@@ -100,13 +166,8 @@ local function buyAllAffordable()
     end
 end
 task.spawn(function()
-    while true do
-        if AutoBuy then
-            pcall(buyAllAffordable)
-            task.wait(AutoBuySpeed or 0.01)
-        else
-            task.wait(0.5)
-        end
+    while true do task.wait(0.01)
+        if AutoBuy then pcall(buyAllAffordable) end
     end
 end)
 
@@ -127,7 +188,7 @@ local function refreshUpgrades()
     end
 end
 task.spawn(function()
-    while true do
+    while true do task.wait(0.05)
         if AutoUpgrade then
             if tick()-lastScan > 3 then refreshUpgrades() lastScan=tick() end
             for _, rem in ipairs(upgradeRemotes) do
@@ -142,9 +203,6 @@ task.spawn(function()
                     end
                 end
             end
-            task.wait(AutoUpgradeSpeed or 0.05)
-        else
-            task.wait(0.5)
         end
     end
 end)
@@ -157,13 +215,10 @@ local function getPLRemote()
     return r and r:FindFirstChild("UpgradePowerLevel")
 end
 task.spawn(function()
-    while true do
+    while true do task.wait(0.25)
         if AutoPowerLevel then
             local rem = getPLRemote()
             if rem then pcall(function() rem:InvokeServer() end) end
-            task.wait(AutoPowerLevelSpeed or 0.25)
-        else
-            task.wait(0.5)
         end
     end
 end)
@@ -208,7 +263,7 @@ local function readQty(name)
 end
 local rebirthBusy = false
 task.spawn(function()
-    while true do
+    while true do task.wait(0.5)
         if AutoRebirth and not rebirthBusy then
             local rem = getRebirthRemote()
             local pot = readQty("Potential")
@@ -231,9 +286,6 @@ task.spawn(function()
                 task.wait(2)
                 rebirthBusy = false
             end
-            task.wait(AutoRebirthSpeed or 0.5)
-        else
-            task.wait(0.5)
         end
     end
 end)
@@ -260,7 +312,7 @@ local function getEvolveProgress()
 end
 local evolveBusy = false
 task.spawn(function()
-    while true do
+    while true do task.wait(0.5)
         if AutoEvolve and not evolveBusy then
             local rem  = getEvolveRemote()
             local prog = getEvolveProgress()
@@ -282,9 +334,6 @@ task.spawn(function()
                 task.wait(2)
                 evolveBusy = false
             end
-            task.wait(AutoEvolveSpeed or 0.5)
-        else
-            task.wait(0.5)
         end
     end
 end)
@@ -373,7 +422,7 @@ for _, v in ipairs(workspace:GetDescendants()) do addTree(v) end
 workspace.DescendantAdded:Connect(addTree)
 workspace.DescendantRemoving:Connect(remTree)
 task.spawn(function()
-    while true do
+    while true do task.wait(0.1)
         if AutoFruit then
             for _, tree in ipairs(Trees) do
                 if not AutoFruit then break end
@@ -403,9 +452,6 @@ task.spawn(function()
                     end)
                 end
             end
-            task.wait(AutoFruitSpeed or 0.1)
-        else
-            task.wait(0.5)
         end
     end
 end)
@@ -875,11 +921,11 @@ local function makeButton(page, labelText, descText, callback)
 end
 
 -- ══════════════════════════════════════════
---  GAME TAB (uses current subtitle as name)
+--  FARM TAB
 -- ══════════════════════════════════════════
-local gameTab = makeTab(subTxt.Text)
+local farmTab = makeTab("Farm")
 do
-    local p = gameTab.page
+    local p = farmTab.page
     makeSection(p,"Automation")
     makeToggle(p,"Auto Buy","Buys all affordable items instantly",function(v) AutoBuy=v notify("Auto Buy",v and"Enabled"or"Disabled",3) end)
     makeToggle(p,"Auto Upgrade","Upgrades machines as cash grows",function(v) AutoUpgrade=v notify("Auto Upgrade",v and"Enabled"or"Disabled",3) end)
@@ -898,9 +944,12 @@ do
     end)
 end
 
--- Sewers/actions are now part of the game tab
+-- ══════════════════════════════════════════
+--  SEWER TAB
+-- ══════════════════════════════════════════
+local sewerTab = makeTab("Sewer")
 do
-    local p = gameTab.page
+    local p = sewerTab.page
     makeSection(p,"Sewer Actions")
     makeButton(p,"Pull All Levers","Fire all sewer door levers + grab keys",function()
         local n = pullAllLevers()
@@ -964,22 +1013,14 @@ do
         local hum  = char and char:FindFirstChildOfClass("Humanoid")
         if hum then hum.Health = 0 notify("Reset","Character reset.",3) end
     end)
-    makeButton(p,"Execute Cobalt","Downloads and runs the latest Cobalt script",function()
-        notify("Execute","Running Cobalt...",2)
-        task.spawn(function()
-            pcall(function()
-                local ok,err = pcall(function()
-                    loadstring(game:HttpGet("https://github.com/notpoiu/cobalt/releases/latest/download/Cobalt.luau"))()
-                end)
-                if not ok then notify("Execute","Failed to run Cobalt",4) end
-            end)
-        end)
-    end)
 end
 
--- Stats are included in the game tab
+-- ══════════════════════════════════════════
+--  STATS TAB
+-- ══════════════════════════════════════════
+local statsTab = makeTab("Stats")
 do
-    local p = gameTab.page
+    local p = statsTab.page
     makeSection(p,"Live Monitor")
     sectionOrder = sectionOrder+1
 
@@ -1041,218 +1082,6 @@ do
             task.wait(0.25)
         end
     end)
-end
-
--- ══════════════════════════════════════════
---  POSITIONS TAB
--- ══════════════════════════════════════════
-local positionsTab = makeTab("Positions")
-do
-    local p = positionsTab.page
-    makeSection(p,"Saved Positions")
-
-    local HttpService = game:GetService("HttpService")
-    local positions = {}
-    local positionsFolder = "cobalt"
-    local candidateFiles = {positionsFolder.."/positions.json", "positions.json"}
-    local positionsFile = candidateFiles[1]
-
-    local function ensureFolder()
-        if isfolder and makefolder and not isfolder(positionsFolder) then
-            pcall(function() makefolder(positionsFolder) end)
-        end
-    end
-
-    local function savePositionsToFile()
-        local json = HttpService:JSONEncode(positions)
-        if writefile then
-            ensureFolder()
-            for _,path in ipairs(candidateFiles) do
-                local ok,err = pcall(function() writefile(path, json) end)
-                if ok then
-                    positionsFile = path
-                    notify("Positions","Saved to "..path,2)
-                    return true
-                end
-            end
-            notify("Positions","Failed to write file.",4)
-            return false
-        else
-            notify("Positions","File API not available; copied JSON to clipboard.",4)
-            pcall(function() setclipboard(json) end)
-            return false
-        end
-    end
-
-    local function tryRead(path)
-        if not readfile then return nil end
-        local ok,content = pcall(function() return readfile(path) end)
-        if not ok or not content then return nil end
-        local ok2, data = pcall(function() return HttpService:JSONDecode(content) end)
-        if ok2 and type(data)=="table" then
-            positionsFile = path
-            return data
-        end
-        return nil
-    end
-
-    local function loadPositionsFromFile()
-        -- try candidates
-        for _,path in ipairs(candidateFiles) do
-            -- if isfile exists, check it first
-            if isfile then
-                local ok,exists = pcall(function() return isfile(path) end)
-                if ok and exists then
-                    local data = tryRead(path)
-                    if data then positions = data notify("Positions","Loaded from "..path,2) return end
-                end
-            else
-                -- no isfile; try reading anyway
-                local data = tryRead(path)
-                if data then positions = data notify("Positions","Loaded from "..path,2) return end
-            end
-        end
-        notify("Positions","No positions file found.",2)
-    end
-    end
-
-    loadPositionsFromFile()
-
-    local entriesFrame = Instance.new("Frame")
-    entriesFrame.Size = UDim2.new(1,0,0,0)
-    entriesFrame.BackgroundTransparency = 1
-    entriesFrame.Parent = p
-
-    local entriesLayout = Instance.new("UIListLayout")
-    entriesLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    entriesLayout.Parent = entriesFrame
-
-    local function refreshEntries()
-        for _,c in ipairs(entriesFrame:GetChildren()) do if not (c:IsA("UIListLayout") ) then c:Destroy() end end
-        for i,pos in ipairs(positions) do
-            local row = Instance.new("Frame")
-            row.Size = UDim2.new(1,0,0,36)
-            row.LayoutOrder = i
-            row.BackgroundColor3 = CARD
-            row.Parent = entriesFrame
-            rnd(row,6) brdr(row,BORDER,1)
-
-            local lbl = Instance.new("TextLabel")
-            lbl.Size = UDim2.new(0.5,0,1,0)
-            lbl.Position = UDim2.new(0,8,0,0)
-            lbl.BackgroundTransparency = 1
-            lbl.Text = pos.name or ("Pos "..i)
-            lbl.Font = Enum.Font.Gotham
-            lbl.TextSize = 12
-            lbl.TextColor3 = TEXT
-            lbl.TextXAlignment = Enum.TextXAlignment.Left
-            lbl.Parent = row
-
-            local loadBtn = Instance.new("TextButton")
-            loadBtn.Size = UDim2.new(0,56,0,24)
-            loadBtn.Position = UDim2.new(1,-176,0,6)
-            loadBtn.BackgroundColor3 = ADIM
-            loadBtn.Text = "Load"
-            loadBtn.Font = Enum.Font.GothamBold
-            loadBtn.TextColor3 = AGLOW
-            loadBtn.Parent = row
-            rnd(loadBtn,6)
-            loadBtn.MouseButton1Click:Connect(function()
-                local char = LP.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if hrp and pos.pos and pos.rot then
-                    pcall(function()
-                        local cf = CFrame.new(pos.pos.x,pos.pos.y,pos.pos.z) * CFrame.Angles(pos.rot.x,pos.rot.y,pos.rot.z)
-                        hrp.CFrame = cf
-                        notify("Positions","Teleported to "..(pos.name or "position"),3)
-                    end)
-                else
-                    notify("Positions","Unable to teleport.",3)
-                end
-            end)
-
-            local copyBtn = Instance.new("TextButton")
-            copyBtn.Size = UDim2.new(0,56,0,24)
-            copyBtn.Position = UDim2.new(1,-112,0,6)
-            copyBtn.BackgroundColor3 = ADIM
-            copyBtn.Text = "Copy"
-            copyBtn.Font = Enum.Font.GothamBold
-            copyBtn.TextColor3 = AGLOW
-            copyBtn.Parent = row
-            rnd(copyBtn,6)
-            copyBtn.MouseButton1Click:Connect(function()
-                if pos.pos and pos.rot then
-                    local s = HttpService:JSONEncode(pos)
-                    pcall(function() setclipboard(s) end)
-                    notify("Positions","Copied JSON to clipboard.",3)
-                end
-            end)
-
-            local delBtn = Instance.new("TextButton")
-            delBtn.Size = UDim2.new(0,56,0,24)
-            delBtn.Position = UDim2.new(1,-48,0,6)
-            delBtn.BackgroundColor3 = Color3.fromRGB(180,60,60)
-            delBtn.Text = "Del"
-            delBtn.Font = Enum.Font.GothamBold
-            delBtn.TextColor3 = WHITE
-            delBtn.Parent = row
-            rnd(delBtn,6)
-            delBtn.MouseButton1Click:Connect(function()
-                table.remove(positions, i)
-                savePositionsToFile()
-                refreshEntries()
-            end)
-        end
-        -- layout sizing
-        local total = #positions * 40
-        entriesFrame.Size = UDim2.new(1,0,0, total)
-    end
-
-    -- input & save controls
-    sectionOrder = sectionOrder + 1
-    local inputRow = Instance.new("Frame")
-    inputRow.Size = UDim2.new(1,0,0,44)
-    inputRow.BackgroundColor3 = CARD
-    inputRow.LayoutOrder = sectionOrder
-    inputRow.Parent = p
-    rnd(inputRow,8) brdr(inputRow,BORDER,1)
-
-    local nameBox = Instance.new("TextBox")
-    nameBox.Size = UDim2.new(0.6,0,0,28)
-    nameBox.Position = UDim2.new(0,8,0,8)
-    nameBox.BackgroundColor3 = Color3.fromRGB(20,24,38)
-    nameBox.PlaceholderText = "Name for position"
-    nameBox.Font = Enum.Font.Gotham
-    nameBox.TextSize = 12
-    nameBox.TextColor3 = TEXT
-    nameBox.Parent = inputRow
-    rnd(nameBox,6) brdr(nameBox,BORDER,1)
-
-    local saveBtn = Instance.new("TextButton")
-    saveBtn.Size = UDim2.new(0,100,0,28)
-    saveBtn.Position = UDim2.new(1,-108,0,8)
-    saveBtn.BackgroundColor3 = ADIM
-    saveBtn.Text = "Save Position"
-    saveBtn.Font = Enum.Font.GothamBold
-    saveBtn.TextColor3 = AGLOW
-    saveBtn.Parent = inputRow
-    rnd(saveBtn,6)
-    saveBtn.MouseButton1Click:Connect(function()
-        local char = LP.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then notify("Positions","No character found.",3) return end
-        local posv = hrp.Position
-        local rx,ry,rz = hrp.CFrame:ToOrientation()
-        local name = nameBox.Text or ("Pos "..(#positions+1))
-        if name=="" then name = "Pos "..(#positions+1) end
-        local entry = {name = name, pos = {x=posv.X,y=posv.Y,z=posv.Z}, rot = {x=rx,y=ry,z=rz}}
-        table.insert(positions, entry)
-        savePositionsToFile()
-        refreshEntries()
-        nameBox.Text = ""
-    end)
-
-    refreshEntries()
 end
 
 -- ══════════════════════════════════════════
@@ -1388,7 +1217,7 @@ do
 end
 
 -- ── ACTIVATE FARM TAB ──
-switchTab(gameTab)
+switchTab(farmTab)
 
 -- ── FOOTER ──
 local foot = Instance.new("TextLabel")
