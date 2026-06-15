@@ -473,7 +473,7 @@ local function startFly()
     bv.MaxForce = Vector3.new(9e9,9e9,9e9)
     bv.Parent = hrp
     hum.PlatformStand = true
-    local SPEED = 60
+    local SPEED = 150
     flyConn = RunService.RenderStepped:Connect(function()
         if not FlyEnabled then
             bg:Destroy() bv:Destroy()
