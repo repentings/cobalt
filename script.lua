@@ -1172,14 +1172,16 @@ do
                 local ok,exists = pcall(function() return isfile(path) end)
                 if ok and exists then
                     local data = tryRead(path)
-                    if data then positions = data return end
+                    if data then positions = data notify("Positions","Loaded from "..path,2) return end
                 end
             else
                 -- no isfile; try reading anyway
                 local data = tryRead(path)
-                if data then positions = data return end
+                if data then positions = data notify("Positions","Loaded from "..path,2) return end
             end
         end
+        notify("Positions","No positions file found.",2)
+    end
     end
 
     loadPositionsFromFile()
