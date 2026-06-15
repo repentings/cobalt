@@ -1122,35 +1122,64 @@ do
     local HttpService = game:GetService("HttpService")
     local positions = {}
     local positionsFolder = "cobalt"
-    local positionsFile = positionsFolder.."/positions.json"
-
-    local function canWrite()
-        return (writefile and isfolder and makefolder and readfile) or (writefile and readfile)
-    end
+    local candidateFiles = {positionsFolder.."/positions.json", "positions.json"}
+    local positionsFile = candidateFiles[1]
 
     local function ensureFolder()
-        if isfolder and not isfolder(positionsFolder) then
+        if isfolder and makefolder and not isfolder(positionsFolder) then
             pcall(function() makefolder(positionsFolder) end)
         end
     end
 
     local function savePositionsToFile()
-        if not writefile then notify("Positions","File API not available",4) return end
-        pcall(function()
+        local json = HttpService:JSONEncode(positions)
+        if writefile then
             ensureFolder()
-            writefile(positionsFile, HttpService:JSONEncode(positions))
-            notify("Positions","Saved to file.",2)
-        end)
+            for _,path in ipairs(candidateFiles) do
+                local ok,err = pcall(function() writefile(path, json) end)
+                if ok then
+                    positionsFile = path
+                    notify("Positions","Saved to "..path,2)
+                    return true
+                end
+            end
+            notify("Positions","Failed to write file.",4)
+            return false
+        else
+            notify("Positions","File API not available; copied JSON to clipboard.",4)
+            pcall(function() setclipboard(json) end)
+            return false
+        end
+    end
+
+    local function tryRead(path)
+        if not readfile then return nil end
+        local ok,content = pcall(function() return readfile(path) end)
+        if not ok or not content then return nil end
+        local ok2, data = pcall(function() return HttpService:JSONDecode(content) end)
+        if ok2 and type(data)=="table" then
+            positionsFile = path
+            return data
+        end
+        return nil
     end
 
     local function loadPositionsFromFile()
-        if not readfile then return end
-        pcall(function()
-            if isfile and not isfile(positionsFile) then return end
-            local content = readfile(positionsFile)
-            local ok, data = pcall(function() return HttpService:JSONDecode(content) end)
-            if ok and type(data)=="table" then positions = data end
-        end)
+        -- try candidates
+        for _,path in ipairs(candidateFiles) do
+            -- if isfile exists, check it first
+            if isfile then
+                local ok,exists = pcall(function() return isfile(path) end)
+                if ok and exists then
+                    local data = tryRead(path)
+                    if data then positions = data return end
+                end
+            else
+                -- no isfile; try reading anyway
+                local data = tryRead(path)
+                if data then positions = data return end
+            end
+        end
     end
 
     loadPositionsFromFile()
