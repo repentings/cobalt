@@ -169,22 +169,51 @@ end)
 task.spawn(function() while true do task.wait(0.25) if AutoPL then local r=getR("UpgradePowerLevel") if r then pcall(function() r:InvokeServer() end) end end end end)
 
 -- auto fruit
+-- NOTE: no longer teleports the player. It only fires ClickDetectors on fruit
+-- that are within FruitRange studs of the player's current position, so you
+-- stay in full control of movement and it just collects whatever is nearby
+-- as you walk past trees naturally.
 local Trees={}
+local FruitRange = 18  -- studs; raise/lower to taste
 workspace.DescendantAdded:Connect(function(o) if o:IsA("Model") and o.Name=="LemonTree" and not table.find(Trees,o) then table.insert(Trees,o) end end)
 workspace.DescendantRemoving:Connect(function(o) local i=table.find(Trees,o) if i then table.remove(Trees,i) end end)
 for _,v in ipairs(workspace:GetDescendants()) do if v:IsA("Model") and v.Name=="LemonTree" then table.insert(Trees,v) end end
+
 task.spawn(function()
-    while true do task.wait(0.1)
-        if AutoFruit then for _,tree in ipairs(Trees) do if not AutoFruit then break end
-            if tree and tree.Parent then pcall(function()
-                local h=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") if not h then return end
-                for _,o in ipairs(tree:GetDescendants()) do if o:IsA("BasePart") then o.CanCollide=false end end
-                h.CFrame=tree:GetPivot()+Vector3.new(0,5,0)
-                for _,o in ipairs(tree:GetDescendants()) do if o:IsA("BasePart") and o.Name=="Fruit" then o.CanCollide=false
-                    local cp=o:FindFirstChild("ClickPart") if cp then local d=cp:FindFirstChildOfClass("ClickDetector") if d then task.wait(0.45) pcall(function() fireclickdetector(d) end) stats.fruit+=1 end end
-                end end
-            end) end
-        end end
+    while true do task.wait(0.15)
+        if AutoFruit then
+            local h=LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+            if h then
+                local myPos = h.Position
+                for _,tree in ipairs(Trees) do
+                    if not AutoFruit then break end
+                    if tree and tree.Parent then
+                        pcall(function()
+                            -- skip trees outside range entirely (cheap distance check first)
+                            local treePos = tree:GetPivot().Position
+                            if (treePos - myPos).Magnitude > (FruitRange + 40) then return end
+
+                            for _,o in ipairs(tree:GetDescendants()) do
+                                if o:IsA("BasePart") and o.Name=="Fruit" then
+                                    o.CanCollide=false
+                                    -- only collect fruit actually within range of the player
+                                    if (o.Position - myPos).Magnitude <= FruitRange then
+                                        local cp=o:FindFirstChild("ClickPart")
+                                        if cp then
+                                            local d=cp:FindFirstChildOfClass("ClickDetector")
+                                            if d then
+                                                pcall(function() fireclickdetector(d) end)
+                                                stats.fruit+=1
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end)
+                    end
+                end
+            end
+        end
     end
 end)
 
@@ -403,7 +432,7 @@ local farmTab=newTab("Farm")
 section(farmTab,"Automation")
 toggle(farmTab,"Auto Buy","Instantly purchases all affordable items",function(v) AutoBuy=v notify("Auto Buy",v and"Enabled"or"Disabled",3) end)
 toggle(farmTab,"Auto Upgrade","Upgrades machines as cash grows",function(v) AutoUpgrade=v notify("Auto Upgrade",v and"Enabled"or"Disabled",3) end)
-toggle(farmTab,"Auto Fruit","Teleports to lemon trees & collects fruit",function(v) AutoFruit=v notify("Auto Fruit",v and"Enabled"or"Disabled",3) end)
+toggle(farmTab,"Auto Fruit","Collects nearby fruit as you walk — no teleport",function(v) AutoFruit=v notify("Auto Fruit",v and"Enabled"or"Disabled",3) end)
 toggle(farmTab,"Auto Power Level","Spams UpgradePowerLevel remote",function(v) AutoPL=v notify("Auto Power Level",v and"Enabled"or"Disabled",3) end)
 section(farmTab,"Progression")
 toggle(farmTab,"Auto Rebirth","Rebirths when investor payout is optimal",function(v)
